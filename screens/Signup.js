@@ -132,8 +132,8 @@ const styles = StyleSheet.create({
     },
 
     imageLayer: {
-        width: width(96),     // fixed width
-        height: height(98),   // fixed height
+        width: width(96),
+        height: height(98),
         borderRadius: 30,
         overflow: 'hidden',
         justifyContent: 'center',
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     },
 
     imageStyle: {
-        borderRadius: 30,     // curve image corners
+        borderRadius: 30,
     },
 
     contentWrapper: {
