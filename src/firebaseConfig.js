@@ -1,19 +1,3 @@
-// // firebaseConfig.js
-// import { initializeApp } from 'firebase/app';
-// import { getAuth } from 'firebase/auth';
-
-// const firebaseConfig = {
-//   apiKey: "AIzaSyDrUzrUpNzDB8UiK80f0UzX2ppkgZjxWGg",
-//   authDomain: "beanpulze-54047.firebaseapp.com",
-//   projectId: "beanpulze-54047",
-//   storageBucket: "beanpulze-54047.firebasestorage.app",
-//   messagingSenderId: "1047264981366",
-//   appId: "1:1047264981366:web:88d57564139856a4b44a57"
-// };
-
-// const app = initializeApp(firebaseConfig);
-// export const auth = getAuth(app);
-
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   initializeAuth,
