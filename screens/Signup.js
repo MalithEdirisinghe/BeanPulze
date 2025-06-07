@@ -35,10 +35,7 @@ const Signup = () => {
         androidClientId: '1047264981366-lc8micl2jcivoqsvk6am5k7q4ejdn1ri.apps.googleusercontent.com', // Optional for bare workflow
         iosClientId: 'YOUR_IOS_CLIENT_ID_HERE',         // Optional
         webClientId: '1047264981366-2ucpcokkvcu5q2njv5eto9b531s6ecim.apps.googleusercontent.com',
-        redirectUri: makeRedirectUri({
-            native: 'beanpulze://redirect',
-            useProxy: false, // Important when using custom scheme
-        }),
+        // Using Expo's proxy redirect to avoid OAuth configuration errors
     });
 
     React.useEffect(() => {
