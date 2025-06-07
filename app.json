@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "Bean Pulze",
-    "slug": "Bean Pulze",
+    "slug": "bean-pulze",
+    "scheme": "beanpulze",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/BeanPulze_logo.png",
@@ -16,6 +17,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.malith98.beanpulze",
       "adaptiveIcon": {
         "foregroundImage": "./assets/BeanPulze_logo.png",
         "backgroundColor": "#ffffff"
