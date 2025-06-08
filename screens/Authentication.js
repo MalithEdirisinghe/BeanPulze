@@ -7,7 +7,6 @@ import {
     TouchableOpacity,
     StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { width, height } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
 
@@ -15,18 +14,18 @@ const Authentication = () => {
     const navigation = useNavigation();
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <View style={styles.container}>
             <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
             <Image
-                source={require('../assets/coffee-beans-splash-burst-aromatic-energy.png')}
+                source={require('../assets/beans.png')}
                 style={styles.backgroundImage}
                 resizeMode="cover"
             />
 
             <View style={styles.logoWrapper}>
                 <Image
-                    source={require('../assets/BeanPulze_logo.png')}
+                    source={require('../assets/logo.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />
@@ -45,7 +44,7 @@ const Authentication = () => {
             >
                 <Text style={styles.signupText}>Sign Up</Text>
             </TouchableOpacity>
-        </SafeAreaView>
+        </View>
     );
 };
 

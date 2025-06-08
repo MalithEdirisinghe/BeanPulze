@@ -13,7 +13,7 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Splash" component={SplashScreen} />
-        <Stack.Screen name="Auth" component={Authentication} />
+        <Stack.Screen name="Authentication" component={Authentication} />
         <Stack.Screen name="Signup" component={Signup} />
       </Stack.Navigator>
       <Toast />

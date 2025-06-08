@@ -1,38 +1,34 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View, Image, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, Image } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { width, height } from '../constants/theme'; // Adjust path if needed
+import { width, height } from '../constants/theme'; // ✅ These are your helpers
 import { useNavigation } from '@react-navigation/native';
 
 const SplashScreen = () => {
-    const { height } = Dimensions.get('window');
-
     const navigation = useNavigation();
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            navigation.replace("Auth"); // Navigate after 5 seconds
-        }, 5000);
-
+            navigation.replace('Authentication');
+        }, 2000);
         return () => clearTimeout(timer);
     }, []);
+
 
     return (
         <View style={styles.container}>
             <Image
-                source={require('../assets/coffee-beans-splash-burst-aromatic-energy.png')}
+                source={require('../assets/beans.png')}
                 style={styles.backgroundImage}
                 resizeMode="cover"
             />
-
             <View style={styles.logoWrapper}>
                 <Image
-                    source={require('../assets/BeanPulze_logo.png')}
+                    source={require('../assets/logo.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />
             </View>
-
             <Text style={styles.aiPowered}>AI-POWERED</Text>
             <StatusBar style="light" />
         </View>

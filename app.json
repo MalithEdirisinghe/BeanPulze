@@ -5,7 +5,7 @@
     "scheme": "beanpulze",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/BeanPulze_logo.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -14,18 +14,26 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.malith98.beanpulze"
     },
     "android": {
       "package": "com.malith98.beanpulze",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/BeanPulze_logo.png",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
+      }
     },
     "web": {
       "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      "expo-asset"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "73a45542-9bdd-4c51-afbf-82cc83e77007"
+      }
     }
   }
 }

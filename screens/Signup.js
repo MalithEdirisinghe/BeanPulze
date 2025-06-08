@@ -8,9 +8,9 @@ import {
     Image,
     StatusBar,
     ImageBackground,
-    ActivityIndicator
+    ActivityIndicator,
+    Platform
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { width, height } from '../constants/theme';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../src/firebaseConfig';
@@ -131,7 +131,7 @@ const Signup = () => {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+        <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#5E2C04" translucent />
 
             {/* Solid Brown Background Layer */}
@@ -146,7 +146,7 @@ const Signup = () => {
                     {/* Form Content Layer */}
                     <View style={styles.contentWrapper}>
                         <Image
-                            source={require('../assets/BeanPulze_logo.png')}
+                            source={require('../assets/logo.png')}
                             style={styles.logo}
                         />
                         <Text style={styles.heading}>Welcome to BeanPulze !</Text>
@@ -189,7 +189,7 @@ const Signup = () => {
                                     source={
                                         showPassword
                                             ? require('../assets/eye.png')
-                                            : require('../assets/Eye off.png')
+                                            : require('../assets/hideeye.png')
                                     }
                                     style={styles.eyeIcon}
                                 />
@@ -213,7 +213,7 @@ const Signup = () => {
                                     source={
                                         showConfirm
                                             ? require('../assets/eye.png')
-                                            : require('../assets/Eye off.png')
+                                            : require('../assets/hideeye.png')
                                     }
                                     style={styles.eyeIcon}
                                 />
@@ -249,13 +249,18 @@ const Signup = () => {
                     </View>
                 </ImageBackground>
             </View>
-        </SafeAreaView>
+        </View>
     );
 };
 
 export default Signup;
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    },
+
     baseLayer: {
         flex: 1,
         backgroundColor: '#5E2C04',
