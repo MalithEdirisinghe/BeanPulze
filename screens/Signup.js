@@ -30,18 +30,25 @@ const Signup = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+
     const [request, response, promptAsync] = Google.useAuthRequest({
         expoClientId: '1047264981366-2ucpcokkvcu5q2njv5eto9b531s6ecim.apps.googleusercontent.com',
-        androidClientId: '1047264981366-lc8micl2jcivoqsvk6am5k7q4ejdn1ri.apps.googleusercontent.com', // Optional for bare workflow
-        iosClientId: 'YOUR_IOS_CLIENT_ID_HERE',         // Optional
-        webClientId: '1047264981366-2ucpcokkvcu5q2njv5eto9b531s6ecim.apps.googleusercontent.com',
+        androidClientId: '1047264981366-3434ft65tuvpgd7m687mt6g1eceouk3g.apps.googleusercontent.com',
         redirectUri: makeRedirectUri({
-            native: 'beanpulze://redirect',
-            useProxy: false, // Important when using custom scheme
-        }),
+            native: 'com.googleusercontent.apps.1047264981366-3434ft65tuvpgd7m687mt6g1eceouk3g:/oauthredirect',
+            useProxy: false,
+        })
     });
 
     React.useEffect(() => {
+        console.log('promptAsync request config2:', request);
+        console.log('Redirect URI:', makeRedirectUri({ useProxy: true }));
+        console.log('Redirect URI (manual):', makeRedirectUri({ useProxy: true, scheme: 'https' }));
+        console.log('Redirect URI (forced):', 'https://auth.expo.io/@malith98/bean-pulze');
+
+        console.log('Hardcoded:', 'https://auth.expo.io/@malith98/bean-pulze');
+        console.log('makeRedirectUri:', makeRedirectUri({ useProxy: true }));
+
         if (response?.type === 'success') {
             const { id_token } = response.authentication;
             const credential = GoogleAuthProvider.credential(id_token);
@@ -235,11 +242,8 @@ const Signup = () => {
                         </TouchableOpacity>
 
                         {/* Google Sign-In */}
-                        <TouchableOpacity style={styles.googleBtn} onPress={() => promptAsync()}>
-                            <Image
-                                source={require('../assets/google_icon.png')}
-                                style={styles.googleIcon}
-                            />
+                        <TouchableOpacity style={styles.googleBtn} onPress={() => promptAsync({ useProxy: false })}>
+                            <Image source={require('../assets/google_icon.png')} style={styles.googleIcon} />
                             <Text style={styles.googleText}>Sign In with Google</Text>
                         </TouchableOpacity>
 

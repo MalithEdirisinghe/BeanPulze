@@ -2,7 +2,7 @@
   "expo": {
     "name": "Bean Pulze",
     "slug": "bean-pulze",
-    "scheme": "beanpulze",
+    "scheme": "com.googleusercontent.apps.1047264981366-3434ft65tuvpgd7m687mt6g1eceouk3g",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": true,

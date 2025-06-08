@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View, Image } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { width, height } from '../constants/theme'; // ✅ These are your helpers
+import { width, height } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
 
 const SplashScreen = () => {
@@ -40,7 +40,7 @@ export default SplashScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#181008',
+        backgroundColor: '#000000',
         alignItems: 'center',
         justifyContent: 'center',
     },
