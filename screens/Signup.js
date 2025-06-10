@@ -17,7 +17,7 @@ import { auth } from '../src/firebaseConfig';
 import Toast from 'react-native-toast-message';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
-import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithCredential, GoogleAuthProvider, updateProfile } from 'firebase/auth';
 import { makeRedirectUri } from 'expo-auth-session';
 import { useNavigation } from '@react-navigation/native';
 import CustomBackHandler from '../components/CustomBackHandler';
@@ -90,15 +90,20 @@ const Signup = () => {
         setLoading(true);
 
         createUserWithEmailAndPassword(auth, email, password)
-            .then(userCredential => {
+            .then(async (userCredential) => {
                 const user = userCredential.user;
-                console.log('User registered:', user.email);
+
+                // ✅ Update display name
+                await updateProfile(user, {
+                    displayName: name,
+                });
+
                 Toast.show({
                     type: 'success',
                     text1: 'Success',
                     text2: 'Registration successful!',
                 });
-                // Optionally: navigate to Home/Login
+                navigation.navigate('Login'); // Navigate to Login after successful signup
             })
             .catch(error => {
                 console.error('Registration error:', error.code);
@@ -245,7 +250,7 @@ const Signup = () => {
                         </TouchableOpacity>
 
                         <Text style={styles.loginPrompt}
-                        onPress={() => navigation.navigate('Login')}>
+                            onPress={() => navigation.navigate('Login')}>
                             Are you already have an account? <Text style={{ color: '#fff' }}>LogIn</Text>
                         </Text>
                     </View>

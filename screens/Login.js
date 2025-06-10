@@ -14,6 +14,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { width, height } from '../constants/theme'; // adjust path if needed
 import CustomBackHandler from '../components/CustomBackHandler';
+import { auth } from '../src/firebaseConfig';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import Toast from 'react-native-toast-message';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
+import { makeRedirectUri } from 'expo-auth-session';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -21,16 +30,109 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    expoClientId: '1047264981366-2ucpcokkvcu5q2njv5eto9b531s6ecim.apps.googleusercontent.com',
+    androidClientId: '1047264981366-3434ft65tuvpgd7m687mt6g1eceouk3g.apps.googleusercontent.com',
+    redirectUri: makeRedirectUri({
+      native: 'com.googleusercontent.apps.1047264981366-3434ft65tuvpgd7m687mt6g1eceouk3g:/oauthredirect',
+      useProxy: false,
+    }),
+  });
+
+  React.useEffect(() => {
+  if (response?.type === 'success') {
+    const { id_token } = response.authentication;
+    const credential = GoogleAuthProvider.credential(id_token);
+
+    signInWithCredential(auth, credential)
+      .then(userCredential => {
+        const email = userCredential?.user?.email;
+
+        setTimeout(() => {
+          Toast.show({
+            type: 'success',
+            text1: 'Google Login Successful',
+            text2: `Welcome ${email}`,
+          });
+        }, 500); // delay ensures Toast renders properly before navigation
+      })
+      .catch(error => {
+        console.error('Google Login Error:', error.message);
+        Toast.show({
+          type: 'error',
+          text1: 'Google Login Failed',
+          text2: error.message,
+        });
+      });
+  }
+}, [response]);
+
   const handleLogin = () => {
+    if (!email || !password) {
+      Toast.show({
+        type: 'error',
+        text1: 'Missing Credentials',
+        text2: 'Please enter email and password',
+      });
+      return;
+    }
+
     setLoading(true);
-    // Your login logic here
-    setTimeout(() => setLoading(false), 1500);
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then(userCredential => {
+        const user = userCredential.user;
+        console.log('Logged in:', user.email);
+
+        Toast.show({
+          type: 'success',
+          text1: 'Login Successful',
+          text2: `Welcome back, ${user.displayName}`,
+        });
+
+        // Navigate to Home or Dashboard if needed
+        // navigation.navigate('Home');
+      })
+      .catch(error => {
+        console.error('Login error:', error.code);
+
+        let message = 'Login failed. Please try again.';
+
+        switch (error.code) {
+          case 'auth/invalid-email':
+            message = 'Invalid email address';
+            break;
+          case 'auth/user-not-found':
+            message = 'No account found with this email';
+            break;
+          case 'auth/wrong-password':
+            message = 'Incorrect password';
+            break;
+          case 'auth/network-request-failed':
+            message = 'Network error. Try again';
+            break;
+          case 'auth/invalid-credential':
+            message = 'Incorrect credentials provided';
+            break;
+          default:
+            message = error.message;
+        }
+
+        Toast.show({
+          type: 'error',
+          text1: 'Login Failed',
+          text2: message,
+        });
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
-    const navigation = useNavigation();
+  const navigation = useNavigation();
   return (
     <SafeAreaView style={{ flex: 1 }}>
-        <CustomBackHandler navigateTo="Authentication" />
+      <CustomBackHandler navigateTo="Authentication" />
 
       <StatusBar barStyle="light-content" backgroundColor="#5E2C04" translucent />
       <View style={styles.baseLayer}>
@@ -98,7 +200,7 @@ const Login = () => {
             </TouchableOpacity>
 
             {/* Google Button */}
-            <TouchableOpacity style={styles.googleBtn}>
+            <TouchableOpacity style={styles.googleBtn} onPress={() => promptAsync({ useProxy: false })}>
               <Image
                 source={require('../assets/google_icon.png')}
                 style={styles.googleIcon}
@@ -107,7 +209,7 @@ const Login = () => {
             </TouchableOpacity>
 
             <Text style={styles.signupPrompt}
-            onPress={() => navigation.navigate('Signup')}>
+              onPress={() => navigation.navigate('Signup')}>
               Are you don’t have an account? <Text style={{ color: '#fff' }}>Sign In</Text>
             </Text>
           </View>
