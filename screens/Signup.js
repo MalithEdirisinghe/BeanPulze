@@ -19,10 +19,13 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
 import { makeRedirectUri } from 'expo-auth-session';
+import { useNavigation } from '@react-navigation/native';
+import CustomBackHandler from '../components/CustomBackHandler';
 
 WebBrowser.maybeCompleteAuthSession();
 
 const Signup = () => {
+    const navigation = useNavigation();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [name, setName] = useState('');
@@ -41,14 +44,6 @@ const Signup = () => {
     });
 
     React.useEffect(() => {
-        console.log('promptAsync request config2:', request);
-        console.log('Redirect URI:', makeRedirectUri({ useProxy: true }));
-        console.log('Redirect URI (manual):', makeRedirectUri({ useProxy: true, scheme: 'https' }));
-        console.log('Redirect URI (forced):', 'https://auth.expo.io/@malith98/bean-pulze');
-
-        console.log('Hardcoded:', 'https://auth.expo.io/@malith98/bean-pulze');
-        console.log('makeRedirectUri:', makeRedirectUri({ useProxy: true }));
-
         if (response?.type === 'success') {
             const { id_token } = response.authentication;
             const credential = GoogleAuthProvider.credential(id_token);
@@ -139,6 +134,8 @@ const Signup = () => {
 
     return (
         <View style={styles.container}>
+            <CustomBackHandler navigateTo="Authentication" />
+
             <StatusBar barStyle="light-content" backgroundColor="#5E2C04" translucent />
 
             {/* Solid Brown Background Layer */}
@@ -247,7 +244,8 @@ const Signup = () => {
                             <Text style={styles.googleText}>Sign In with Google</Text>
                         </TouchableOpacity>
 
-                        <Text style={styles.loginPrompt}>
+                        <Text style={styles.loginPrompt}
+                        onPress={() => navigation.navigate('Login')}>
                             Are you already have an account? <Text style={{ color: '#fff' }}>LogIn</Text>
                         </Text>
                     </View>

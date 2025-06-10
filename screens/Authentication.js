@@ -35,7 +35,8 @@ const Authentication = () => {
             <Text style={styles.subTitle}>AI-POWERED</Text>
             <Text style={styles.caption}>Coffee Bean Checker</Text>
 
-            <TouchableOpacity style={styles.loginBtn}>
+            <TouchableOpacity style={styles.loginBtn}
+                onPress={() => navigation.navigate('Login')}>
                 <Text style={styles.loginText}>Login</Text>
             </TouchableOpacity>
 
