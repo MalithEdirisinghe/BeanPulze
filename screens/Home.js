@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, ImageBackground } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { width, height, fontSize } from '../constants/theme'; // adjust path if needed
+import { width, height, fontSize } from '../constants/theme';
 import { StatusBar } from 'expo-status-bar';
 import { auth } from '../src/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -30,12 +30,21 @@ const Home = () => {
             <StatusBar style="light" backgroundColor="#2F1606" />
             <View style={styles.homeContent}>
                 <ImageBackground
-                    source={require('../assets/spoon.png')} // Use your background image
+                    source={require('../assets/spoon.png')}
                     resizeMode="repeat"
                     style={styles.imageLayer}
                 >
                     {/* Greeting Section */}
-                    <Text style={styles.greeting}>Greetings, {userName}!</Text>
+                    {/* <Text style={styles.greeting}>Greetings, {userName}!</Text> */}
+                    <View style={styles.greetingRow}>
+                        <Text style={styles.greeting}>Greetings, {userName}!</Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                            <Image
+                                source={require('../assets/profile_icon.png')} // ← Add a profile icon in your assets
+                                style={styles.profileIcon}
+                            />
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Home Section */}
                     <Text style={styles.heading}>Home</Text>
@@ -52,9 +61,9 @@ const Home = () => {
 
             {/* Quick Action Buttons */}
             <View style={styles.quickActionsContainer}>
-                <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Camera')}>
+                <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Capture')}>
                     <Image
-                        source={require('../assets/Rectangle.png')} // Your camera icon
+                        source={require('../assets/Rectangle.png')}
                         style={styles.icon}
                     />
                     <Text style={styles.buttonText}>Take a photo to check quality</Text>
@@ -62,7 +71,7 @@ const Home = () => {
 
                 <TouchableOpacity style={styles.quickActionButton2} onPress={() => navigation.navigate('Reports')}>
                     <Image
-                        source={require('../assets/analyses.png')} // Your past analyses icon
+                        source={require('../assets/analyses.png')}
                         style={styles.icon}
                     />
                     <Text style={styles.buttonText}>View your past analyses</Text>
@@ -73,7 +82,7 @@ const Home = () => {
             <View style={styles.bottomNav}>
                 <TouchableOpacity onPress={() => navigation.navigate('Home')}>
                     <Image
-                        source={require('../assets/home.png')} // Your home icon
+                        source={require('../assets/home.png')}
                         style={styles.navIcon}
                     />
                     <Text style={styles.navText}>Home</Text>
@@ -81,7 +90,7 @@ const Home = () => {
 
                 <TouchableOpacity onPress={() => navigation.navigate('Help')}>
                     <Image
-                        source={require('../assets/help_icon.png')} // Your help icon
+                        source={require('../assets/help_icon.png')}
                         style={styles.navIcon}
                     />
                     <Text style={styles.navText}>Help and Support</Text>
@@ -89,7 +98,7 @@ const Home = () => {
 
                 <TouchableOpacity onPress={() => navigation.navigate('More')}>
                     <Image
-                        source={require('../assets/more_icon.png')} // Your more options icon
+                        source={require('../assets/more_icon.png')}
                         style={styles.navIcon}
                     />
                     <Text style={styles.navText}>More Options</Text>
@@ -103,7 +112,7 @@ export default Home;
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1, // Adjust background color as needed
+        flex: 1,
     },
     homeContent: {
         flex: 1,
@@ -111,12 +120,12 @@ const styles = StyleSheet.create({
         alignItems: 'left',
         padding: width(1),
         backgroundColor: '#2F1606',
-        bottom: height(35), // Adjust to leave space for bottom navigation
+        bottom: height(35),
     },
     textContain: {
         position: 'absolute',
         top: height(44),
-        backgroundColor: 'white', // Semi-transparent background
+        backgroundColor: 'white',
         width: width(100),
         height: height(100),
     },
@@ -127,28 +136,47 @@ const styles = StyleSheet.create({
         padding: width(5),
         top: height(43),
     },
+    greetingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: width(90),
+        paddingHorizontal: width(15),
+        marginBottom: height(0),
+    },
+
+    profileIcon: {
+        width: width(12),
+        height: width(12),
+        borderRadius: width(6),
+        borderWidth: 1,
+        borderColor: '#451700',
+        bottom: height(32),
+        left: width(5),
+    },
     greeting: {
         fontSize: fontSize(5.5),
         fontWeight: 'bold',
         color: '#fff',
         bottom: height(32),
         right: width(18),
-        paddingLeft: width(2),
         paddingRight: width(14),
     },
     heading: {
         fontSize: fontSize(8),
         fontWeight: 'bold',
         color: '#fff',
-        bottom: height(10),
+        bottom: height(13),
         alignSelf: 'flex-start',
+        right: width(2),
     },
     subHeading: {
         fontSize: fontSize(3.5),
         color: '#c3c5c5',
         marginBottom: height(2),
-        bottom: height(10),
+        bottom: height(13),
         alignSelf: 'flex-start',
+        right: width(2),
     },
     quickActionsText: {
         fontSize: width(5),
