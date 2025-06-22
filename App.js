@@ -5,6 +5,7 @@ import SplashScreen from './components/SplashScreen';
 import Authentication from './screens/Authentication';
 import Signup from './screens/Signup';
 import Login from './screens/Login';
+import Home from './screens/Home'
 import Toast from 'react-native-toast-message';
 
 const Stack = createNativeStackNavigator();
@@ -17,6 +18,7 @@ export default function App() {
         <Stack.Screen name="Authentication" component={Authentication} />
         <Stack.Screen name="Signup" component={Signup} />
         <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name='Home' component={Home}/>
       </Stack.Navigator>
       <Toast />
     </NavigationContainer>

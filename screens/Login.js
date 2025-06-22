@@ -40,32 +40,32 @@ const Login = () => {
   });
 
   React.useEffect(() => {
-  if (response?.type === 'success') {
-    const { id_token } = response.authentication;
-    const credential = GoogleAuthProvider.credential(id_token);
+    if (response?.type === 'success') {
+      const { id_token } = response.authentication;
+      const credential = GoogleAuthProvider.credential(id_token);
 
-    signInWithCredential(auth, credential)
-      .then(userCredential => {
-        const email = userCredential?.user?.email;
+      signInWithCredential(auth, credential)
+        .then(userCredential => {
+          const email = userCredential?.user?.email;
 
-        setTimeout(() => {
+          setTimeout(() => {
+            Toast.show({
+              type: 'success',
+              text1: 'Google Login Successful',
+              text2: `Welcome ${email}`,
+            });
+          }, 500); // delay ensures Toast renders properly before navigation
+        })
+        .catch(error => {
+          console.error('Google Login Error:', error.message);
           Toast.show({
-            type: 'success',
-            text1: 'Google Login Successful',
-            text2: `Welcome ${email}`,
+            type: 'error',
+            text1: 'Google Login Failed',
+            text2: error.message,
           });
-        }, 500); // delay ensures Toast renders properly before navigation
-      })
-      .catch(error => {
-        console.error('Google Login Error:', error.message);
-        Toast.show({
-          type: 'error',
-          text1: 'Google Login Failed',
-          text2: error.message,
         });
-      });
-  }
-}, [response]);
+    }
+  }, [response]);
 
   const handleLogin = () => {
     if (!email || !password) {
@@ -91,7 +91,7 @@ const Login = () => {
         });
 
         // Navigate to Home or Dashboard if needed
-        // navigation.navigate('Home');
+        navigation.navigate('Home');
       })
       .catch(error => {
         console.error('Login error:', error.code);
