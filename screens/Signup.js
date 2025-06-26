@@ -55,7 +55,7 @@ const Signup = () => {
                         text1: 'Logged In',
                         text2: `Welcome ${userCredential.user.email}`,
                     });
-                    // Navigate to Home or Dashboard
+                    navigation.navigate('Home');
                 })
                 .catch(error => {
                     console.error('Google Sign-In Error:', error.message);

@@ -39,33 +39,70 @@ const Login = () => {
     }),
   });
 
+  // React.useEffect(() => {
+  //   if (response?.type === 'success') {
+  //     const { id_token } = response.authentication;
+  //     const credential = GoogleAuthProvider.credential(id_token);
+
+  //     signInWithCredential(auth, credential)
+  //       .then(userCredential => {
+  //         const email = userCredential?.user?.email;
+  //         navigation.navigate('Home');
+
+  //         setTimeout(() => {
+  //           Toast.show({
+  //             type: 'success',
+  //             text1: 'Google Login Successful',
+  //             text2: `Welcome ${email}`,
+  //           });
+  //         }, 500); // delay ensures Toast renders properly before navigation
+  //       })
+  //       .catch(error => {
+  //         console.error('Google Login Error:', error.message);
+  //         Toast.show({
+  //           type: 'error',
+  //           text1: 'Google Login Failed',
+  //           text2: error.message,
+  //         });
+  //       });
+  //   }
+  // }, [response]);
   React.useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.authentication;
-      const credential = GoogleAuthProvider.credential(id_token);
+  if (response?.type === 'success') {
+    const id_token = response?.authentication?.idToken;
 
-      signInWithCredential(auth, credential)
-        .then(userCredential => {
-          const email = userCredential?.user?.email;
-
-          setTimeout(() => {
-            Toast.show({
-              type: 'success',
-              text1: 'Google Login Successful',
-              text2: `Welcome ${email}`,
-            });
-          }, 500); // delay ensures Toast renders properly before navigation
-        })
-        .catch(error => {
-          console.error('Google Login Error:', error.message);
-          Toast.show({
-            type: 'error',
-            text1: 'Google Login Failed',
-            text2: error.message,
-          });
-        });
+    if (!id_token) {
+      console.error('❌ id_token is missing in response:', response?.authentication);
+      Toast.show({
+        type: 'error',
+        text1: 'Google Sign-In Failed',
+        text2: 'Missing Google ID token.',
+      });
+      return;
     }
-  }, [response]);
+
+    const credential = GoogleAuthProvider.credential(id_token);
+
+    signInWithCredential(auth, credential)
+      .then(userCredential => {
+        Toast.show({
+          type: 'success',
+          text1: 'Logged In',
+          text2: `Welcome ${userCredential.user.email}`,
+        });
+
+        navigation.navigate('Home'); // ✅ safe to navigate here
+      })
+      .catch(error => {
+        console.error('❌ signInWithCredential error:', error.message);
+        Toast.show({
+          type: 'error',
+          text1: 'Google Sign-In Failed',
+          text2: error.message,
+        });
+      });
+  }
+}, [response]);
 
   const handleLogin = () => {
     if (!email || !password) {
