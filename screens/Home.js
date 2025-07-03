@@ -5,12 +5,21 @@ import { width, height, fontSize } from '../constants/theme';
 import { StatusBar } from 'expo-status-bar';
 import { auth } from '../src/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
+import CaptureOptionModal from '../components/CaptureOptionModal';
 
 const Home = () => {
     const navigation = useNavigation();
-
-    // Placeholder user name
     const [userName, setUserName] = useState('');
+    const [modalVisible, setModalVisible] = useState(false);
+
+    const handleOptionSelect = (option) => {
+        setModalVisible(false);
+        if (option === 'quality') {
+            navigation.navigate('Capture');
+        } else if (option === 'diseases') {
+            navigation.navigate('Disease');
+        }
+    };
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -61,12 +70,16 @@ const Home = () => {
 
             {/* Quick Action Buttons */}
             <View style={styles.quickActionsContainer}>
-                <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Capture')}>
+                {/* <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Capture')}> */}
+                <TouchableOpacity
+                    style={styles.quickActionButton}
+                    onPress={() => setModalVisible(true)}
+                >
                     <Image
                         source={require('../assets/Rectangle.png')}
                         style={styles.icon}
                     />
-                    <Text style={styles.buttonText}>Take a photo to check quality</Text>
+                    <Text style={styles.buttonText}>Take a photo to check quality {"\n"}   OR {"\n"} Check Diseases</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.quickActionButton2} onPress={() => navigation.navigate('Reports')}>
@@ -104,6 +117,11 @@ const Home = () => {
                     <Text style={styles.navText}>More Options</Text>
                 </TouchableOpacity>
             </View>
+            <CaptureOptionModal
+                visible={modalVisible}
+                onClose={() => setModalVisible(false)}
+                onSelectOption={handleOptionSelect}
+            />
         </View>
     );
 };
@@ -234,6 +252,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#000',
         flexShrink: 1,
+        textAlign: 'center',
     },
     bottomNav: {
         flexDirection: 'row',

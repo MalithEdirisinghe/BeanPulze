@@ -21,6 +21,7 @@ import { signInWithCredential, GoogleAuthProvider, updateProfile } from 'firebas
 import { makeRedirectUri } from 'expo-auth-session';
 import { useNavigation } from '@react-navigation/native';
 import CustomBackHandler from '../components/CustomBackHandler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -93,18 +94,24 @@ const Signup = () => {
             .then(async (userCredential) => {
                 const user = userCredential.user;
 
-                // ✅ Update display name
                 await updateProfile(user, {
                     displayName: name,
                 });
+
+                await AsyncStorage.setItem('isLoggedIn', 'true');
 
                 Toast.show({
                     type: 'success',
                     text1: 'Success',
                     text2: 'Registration successful!',
                 });
-                navigation.navigate('Login'); // Navigate to Login after successful signup
+
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'Home' }],
+                });
             })
+
             .catch(error => {
                 console.error('Registration error:', error.code);
 

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { width, height } from '../constants/theme'; // adjust path if needed
+import { width, height } from '../constants/theme';
 import CustomBackHandler from '../components/CustomBackHandler';
 import { auth } from '../src/firebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -21,6 +21,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
 import { makeRedirectUri } from 'expo-auth-session';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -39,70 +40,42 @@ const Login = () => {
     }),
   });
 
-  // React.useEffect(() => {
-  //   if (response?.type === 'success') {
-  //     const { id_token } = response.authentication;
-  //     const credential = GoogleAuthProvider.credential(id_token);
-
-  //     signInWithCredential(auth, credential)
-  //       .then(userCredential => {
-  //         const email = userCredential?.user?.email;
-  //         navigation.navigate('Home');
-
-  //         setTimeout(() => {
-  //           Toast.show({
-  //             type: 'success',
-  //             text1: 'Google Login Successful',
-  //             text2: `Welcome ${email}`,
-  //           });
-  //         }, 500); // delay ensures Toast renders properly before navigation
-  //       })
-  //       .catch(error => {
-  //         console.error('Google Login Error:', error.message);
-  //         Toast.show({
-  //           type: 'error',
-  //           text1: 'Google Login Failed',
-  //           text2: error.message,
-  //         });
-  //       });
-  //   }
-  // }, [response]);
   React.useEffect(() => {
-  if (response?.type === 'success') {
-    const id_token = response?.authentication?.idToken;
+    if (response?.type === 'success') {
+      const id_token = response?.authentication?.idToken;
 
-    if (!id_token) {
-      console.error('❌ id_token is missing in response:', response?.authentication);
-      Toast.show({
-        type: 'error',
-        text1: 'Google Sign-In Failed',
-        text2: 'Missing Google ID token.',
-      });
-      return;
-    }
-
-    const credential = GoogleAuthProvider.credential(id_token);
-
-    signInWithCredential(auth, credential)
-      .then(userCredential => {
-        Toast.show({
-          type: 'success',
-          text1: 'Logged In',
-          text2: `Welcome ${userCredential.user.email}`,
-        });
-
-        navigation.navigate('Home'); // ✅ safe to navigate here
-      })
-      .catch(error => {
-        console.error('❌ signInWithCredential error:', error.message);
+      if (!id_token) {
+        console.error('❌ id_token is missing in response:', response?.authentication);
         Toast.show({
           type: 'error',
           text1: 'Google Sign-In Failed',
-          text2: error.message,
+          text2: 'Missing Google ID token.',
         });
-      });
-  }
-}, [response]);
+        return;
+      }
+
+      const credential = GoogleAuthProvider.credential(id_token);
+
+      signInWithCredential(auth, credential)
+        .then(userCredential => {
+          Toast.show({
+            type: 'success',
+            text1: 'Logged In',
+            text2: `Welcome ${userCredential.user.email}`,
+          });
+
+          navigation.navigate('Home');
+        })
+        .catch(error => {
+          console.error('❌ signInWithCredential error:', error.message);
+          Toast.show({
+            type: 'error',
+            text1: 'Google Sign-In Failed',
+            text2: error.message,
+          });
+        });
+    }
+  }, [response]);
 
   const handleLogin = () => {
     if (!email || !password) {
@@ -117,9 +90,11 @@ const Login = () => {
     setLoading(true);
 
     signInWithEmailAndPassword(auth, email, password)
-      .then(userCredential => {
+      .then(async (userCredential) => {
         const user = userCredential.user;
         console.log('Logged in:', user.email);
+
+        await AsyncStorage.setItem('isLoggedIn', 'true');
 
         Toast.show({
           type: 'success',
@@ -127,9 +102,12 @@ const Login = () => {
           text2: `Welcome back, ${user.displayName}`,
         });
 
-        // Navigate to Home or Dashboard if needed
-        navigation.navigate('Home');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
       })
+
       .catch(error => {
         console.error('Login error:', error.code);
 

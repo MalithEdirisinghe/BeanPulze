@@ -14,6 +14,8 @@ import { StatusBar } from 'expo-status-bar';
 import Header from '../components/Header';
 import { auth } from '../src/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signOut } from 'firebase/auth';
 
 const More = () => {
     const navigation = useNavigation();
@@ -32,8 +34,17 @@ const More = () => {
         return unsubscribe;
     }, []);
 
-    const handleLogout = () => {
-        // Add logout logic
+    const handleLogout = async () => {
+        try {
+            await AsyncStorage.removeItem('isLoggedIn');
+            await signOut(auth);
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+            });
+        } catch (error) {
+            console.error('Logout Error:', error);
+        }
     };
 
     return (
