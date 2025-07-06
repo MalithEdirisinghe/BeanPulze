@@ -86,11 +86,10 @@ const Disease = () => {
         { label: 'More than 10 days', value: '5+' },
     ];
 
-    const [rainModalVisible, setRainModalVisible] = useState(false);
     const [selectedRain, setSelectedRain] = useState(null);
     const rainOptions = [
-        { label: 'Yes', value: 'yes' },
-        { label: 'No', value: 'no' },
+        { label: 'Yes', value: 'yes', emoji: '🌧️' },
+        { label: 'No', value: 'no', emoji: '☀️' },
     ];
 
     const handleSubmit = () => {
@@ -151,13 +150,21 @@ const Disease = () => {
 
                 {/* RAIN */}
                 <Text style={styles.label}>Caught Rain/Mist</Text>
-                <TouchableOpacity style={styles.customDropdown} onPress={() => setRainModalVisible(true)}>
-                    <Text style={styles.dropdownText}>
-                        {selectedRain
-                            ? rainOptions.find(o => o.value === selectedRain)?.label
-                            : 'Select option'}
-                    </Text>
-                </TouchableOpacity>
+                <View style={styles.radioGroup}>
+                    {rainOptions.map((option) => (
+                        <TouchableOpacity
+                            key={option.value}
+                            style={[
+                                styles.radioButton,
+                                selectedRain === option.value && styles.radioButtonSelected,
+                            ]}
+                            onPress={() => setSelectedRain(option.value)}
+                        >
+                            <Text style={styles.radioEmoji}>{option.emoji}</Text>
+                            <Text style={styles.radioText}>{option.label}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
 
                 {/* SUBMIT */}
                 <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
@@ -198,14 +205,6 @@ const Disease = () => {
                 options={dehydrateOptions}
                 selectedValues={selectedDehydrate}
                 setSelectedValues={setSelectedDehydrate}
-            />
-            <SelectModal
-                title="Caught Rain or Mist?"
-                visible={rainModalVisible}
-                onClose={() => setRainModalVisible(false)}
-                options={rainOptions}
-                selectedValues={selectedRain}
-                setSelectedValues={setSelectedRain}
             />
         </KeyboardAvoidingView>
     );
@@ -256,5 +255,33 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: fontSize(4),
         fontWeight: '600',
+    },
+    radioGroup: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: height(1),
+        marginBottom: height(3),
+    },
+    radioButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: height(1.2),
+        paddingHorizontal: width(4),
+        borderRadius: 8,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#ccc',
+    },
+    radioButtonSelected: {
+        borderColor: '#FF7A00',
+        backgroundColor: '#FFE8D9',
+    },
+    radioEmoji: {
+        fontSize: fontSize(5),
+        marginRight: width(1),
+    },
+    radioText: {
+        fontSize: fontSize(4),
+        color: '#333',
     },
 });
