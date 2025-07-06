@@ -1,32 +1,71 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
     Image,
-    ImageBackground,
-    ScrollView
+    ScrollView,
+    Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { width, height, fontSize } from '../constants/theme';
 import { StatusBar } from 'expo-status-bar';
 import Header from '../components/Header';
 
 const Capture = () => {
     const navigation = useNavigation();
+    const [image, setImage] = useState(null);
 
-    const handleCapture = () => {
-        // Logic for opening camera and capturing image
+    const handlePickImage = async () => {
+        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+
+        if (!permissionResult.granted) {
+            Alert.alert('Permission denied', 'Camera access is required.');
+            return;
+        }
+
+        Alert.alert('Choose Option', 'Select an option to proceed', [
+            {
+                text: 'Camera',
+                onPress: async () => {
+                    const result = await ImagePicker.launchCameraAsync({
+                        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                        allowsEditing: true,
+                        quality: 1,
+                    });
+
+                    if (!result.canceled) {
+                        setImage(result.assets[0].uri);
+                    }
+                },
+            },
+            {
+                text: 'Gallery',
+                onPress: async () => {
+                    const result = await ImagePicker.launchImageLibraryAsync({
+                        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                        allowsEditing: true,
+                        quality: 1,
+                    });
+
+                    if (!result.canceled) {
+                        setImage(result.assets[0].uri);
+                    }
+                },
+            },
+            { text: 'Cancel', style: 'cancel' },
+        ]);
     };
 
     const handleSendToAI = () => {
-        // Logic for sending to AI model
+        // Replace with your actual AI send logic
+        Alert.alert('Image sent to AI for analysis!');
     };
 
     const handleViewAdvice = () => {
-        // Logic for navigating to advice/details
         navigation.navigate('Advice');
     };
 
@@ -39,21 +78,36 @@ const Capture = () => {
             {/* Image Capture Card */}
             <View style={styles.card}>
                 <Image
-                    source={require('../assets/capture.png')}
+                    source={image ? { uri: image } : require('../assets/capture.png')}
                     style={styles.coffeeImage}
                     resizeMode="cover"
                 />
-                <Text style={styles.captureText}>Take a photo to check quality</Text>
+                {/* <Text style={styles.captureText}>Take a photo to check quality</Text> */}
+                {!image ? (
+                    <Text style={styles.captureText}>Take a photo to check quality</Text>
+                ) : (
+                    <TouchableOpacity onPress={handlePickImage}>
+                        <Text style={[styles.captureText, styles.retakeText]}>
+                            Retake or Re-select Image
+                        </Text>
+                    </TouchableOpacity>
+                )}
 
-                <TouchableOpacity style={styles.aiButton} onPress={handleSendToAI}>
-                    <Text style={styles.buttonText}>Save Image & Send to AI</Text>
-                </TouchableOpacity>
+                {!image ? (
+                    <TouchableOpacity style={styles.aiButton} onPress={handlePickImage}>
+                        <Ionicons name="camera" size={20} color="#fff" style={{ marginRight: 8 }} />
+                        <Text style={styles.buttonText}>Capture or Select Image</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity style={styles.aiButton} onPress={handleSendToAI}>
+                        <Text style={styles.buttonText}>Save Image & Send to AI</Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
             {/* Summary Card */}
             <View style={styles.summaryCard}>
                 <Text style={styles.summaryTitle}>Summary</Text>
-
                 <Text style={styles.summaryText}>Coffee Type : Arabica</Text>
                 <Text style={styles.summaryText}>Quality Score : 75%</Text>
                 <Text style={styles.summaryText}>Quality Mode : Green (Good)</Text>
@@ -102,6 +156,9 @@ const styles = StyleSheet.create({
         paddingVertical: height(1.8),
         borderRadius: 10,
         alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: height(1),
     },
     summaryCard: {
         backgroundColor: '#fff',
@@ -150,4 +207,9 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: fontSize(4),
     },
+    retakeText: {
+        color: '#FF7A00',
+        fontWeight: 'bold',
+        textDecorationLine: 'underline',
+    }
 });
