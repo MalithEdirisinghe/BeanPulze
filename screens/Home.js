@@ -6,11 +6,13 @@ import { StatusBar } from 'expo-status-bar';
 import { auth } from '../src/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import CaptureOptionModal from '../components/CaptureOptionModal';
+import HelpModal from '../components/HelpModal';
 
 const Home = () => {
     const navigation = useNavigation();
     const [userName, setUserName] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
+    const [helpVisible, setHelpVisible] = useState(false);
 
     const handleOptionSelect = (option) => {
         setModalVisible(false);
@@ -44,12 +46,11 @@ const Home = () => {
                     style={styles.imageLayer}
                 >
                     {/* Greeting Section */}
-                    {/* <Text style={styles.greeting}>Greetings, {userName}!</Text> */}
                     <View style={styles.greetingRow}>
                         <Text style={styles.greeting}>Greetings, {userName}!</Text>
                         <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
                             <Image
-                                source={require('../assets/profile_icon.png')} // ← Add a profile icon in your assets
+                                source={require('../assets/profile_icon.png')}
                                 style={styles.profileIcon}
                             />
                         </TouchableOpacity>
@@ -70,7 +71,6 @@ const Home = () => {
 
             {/* Quick Action Buttons */}
             <View style={styles.quickActionsContainer}>
-                {/* <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Capture')}> */}
                 <TouchableOpacity
                     style={styles.quickActionButton}
                     onPress={() => setModalVisible(true)}
@@ -82,7 +82,7 @@ const Home = () => {
                     <Text style={styles.buttonText}>Take a photo to check quality {"\n"}   OR {"\n"} Check Diseases</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.quickActionButton2} onPress={() => navigation.navigate('Reports')}>
+                <TouchableOpacity style={styles.quickActionButton2} onPress={() => navigation.navigate('Report')}>
                     <Image
                         source={require('../assets/analyses.png')}
                         style={styles.icon}
@@ -101,7 +101,7 @@ const Home = () => {
                     <Text style={styles.navText}>Home</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => navigation.navigate('Help')}>
+                <TouchableOpacity onPress={() => setHelpVisible(true)}>
                     <Image
                         source={require('../assets/help_icon.png')}
                         style={styles.navIcon}
@@ -122,6 +122,7 @@ const Home = () => {
                 onClose={() => setModalVisible(false)}
                 onSelectOption={handleOptionSelect}
             />
+            <HelpModal visible={helpVisible} onClose={() => setHelpVisible(false)} />
         </View>
     );
 };
