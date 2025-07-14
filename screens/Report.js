@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -24,9 +24,41 @@ const Report = () => {
     const [activeTab, setActiveTab] = useState('Today');
     const today = new Date();
     const [baseDate, setBaseDate] = useState(new Date());
-    // const dateRange = Array.from({ length: 7 }, (_, i) => addDays(today, i - 3)); // 3 days back to 3 days ahead
-    const dateRange = Array.from({ length: 30 }, (_, i) => addDays(baseDate, i - 15)); // 15 days back to 15 days ahead
+    const dateRange = Array.from({ length: 30 }, (_, i) => addDays(baseDate, i - 15));
     const [selectedDate, setSelectedDate] = useState(format(today, 'yyyy-MM-dd'));
+    const scrollViewRef = useRef(null);
+    const [sortVisible, setSortVisible] = useState(false);
+    const [selectedSort, setSelectedSort] = useState('All');
+
+    // Function to scroll to today's date
+    const scrollToToday = () => {
+        const todayIndex = dateRange.findIndex(date =>
+            format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
+        );
+
+        if (todayIndex !== -1 && scrollViewRef.current) {
+            // Calculate scroll position (each date box width + margin)
+            const scrollPosition = todayIndex * (width(14) + width(2)) - width(20); // Offset to center
+            scrollViewRef.current.scrollTo({
+                x: Math.max(0, scrollPosition),
+                animated: true
+            });
+        }
+    };
+
+    // Scroll to today when component mounts or baseDate changes
+    useEffect(() => {
+        // Small delay to ensure ScrollView is rendered
+        const timer = setTimeout(() => {
+            scrollToToday();
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [baseDate]);
+
+    const filteredReports = selectedSort === 'All'
+        ? reports
+        : reports.filter(r => r.label === selectedSort);
 
     return (
         <View style={styles.container}>
@@ -37,29 +69,39 @@ const Report = () => {
             <View style={styles.tabContainer}>
                 <TouchableOpacity
                     style={styles.tabButton}
-                    onPress={() => setBaseDate(prev => addDays(prev, -30))}
+                    onPress={() => {
+                        const newDate = addDays(baseDate, -30);
+                        setBaseDate(newDate);
+                        setActiveTab('Last Month');
+                    }}
                 >
-                    <Text style={styles.tabText}>Last Month</Text>
+                    <Text style={[styles.tabText, activeTab === 'Last Month' && styles.tabActiveText]}>Last Month</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tabButton, styles.tabActive]}
+                    style={[styles.tabButton, activeTab === 'Today' && styles.tabActive]}
                     onPress={() => {
                         setBaseDate(new Date());
                         setSelectedDate(format(new Date(), 'yyyy-MM-dd'));
+                        setActiveTab('Today');
                     }}
                 >
-                    <Text style={styles.tabActiveText}>Today</Text>
+                    <Text style={[styles.tabText, activeTab === 'Today' && styles.tabActiveText]}>Today</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tabButton]}
-                    onPress={() => setBaseDate(prev => addDays(prev, 30))}
+                    style={[styles.tabButton, activeTab === 'Next Month' && styles.tabActive]}
+                    onPress={() => {
+                        const newDate = addDays(baseDate, 30);
+                        setBaseDate(newDate);
+                        setActiveTab('Next Month');
+                    }}
                 >
-                    <Text style={styles.tabText}>Next Month</Text>
+                    <Text style={[styles.tabText, activeTab === 'Next Month' && styles.tabActiveText]}>Next Month</Text>
                 </TouchableOpacity>
             </View>
 
             {/* Dates Row */}
             <ScrollView
+                ref={scrollViewRef}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={styles.datesRow}
@@ -67,15 +109,36 @@ const Report = () => {
             >
                 {dateRange.map((date, i) => {
                     const isSelected = format(date, 'yyyy-MM-dd') === selectedDate;
+                    const isToday = format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+
                     return (
                         <TouchableOpacity
                             key={i}
                             onPress={() => setSelectedDate(format(date, 'yyyy-MM-dd'))}
-                            style={[styles.dateBox, isSelected && styles.selectedDate]}
+                            style={[
+                                styles.dateBox,
+                                isSelected && styles.selectedDate,
+                                isToday && styles.todayDate
+                            ]}
                         >
-                            <Text style={styles.dateText}>{format(date, 'MMM').toUpperCase()}</Text>
-                            <Text style={styles.dateNum}>{format(date, 'dd')}</Text>
-                            <Text style={styles.dateTextSmall}>{format(date, 'EEE').toUpperCase()}</Text>
+                            <Text style={[
+                                styles.dateText,
+                                isToday && styles.todayText
+                            ]}>
+                                {format(date, 'MMM').toUpperCase()}
+                            </Text>
+                            <Text style={[
+                                styles.dateNum,
+                                isToday && styles.todayText
+                            ]}>
+                                {format(date, 'dd')}
+                            </Text>
+                            <Text style={[
+                                styles.dateTextSmall,
+                                isToday && styles.todayText
+                            ]}>
+                                {format(date, 'EEE').toUpperCase()}
+                            </Text>
                         </TouchableOpacity>
                     );
                 })}
@@ -84,14 +147,36 @@ const Report = () => {
             {/* Sorting Dropdown (static for now) */}
             <View style={styles.sortContainer}>
                 <Text style={styles.sortLabel}>Sorting Options :</Text>
-                <TouchableOpacity style={styles.sortButton}>
-                    <Text style={styles.sortButtonText}>High Quality/Deseased ▾</Text>
+                <TouchableOpacity
+                    style={styles.sortButton}
+                    onPress={() => setSortVisible(!sortVisible)}
+                >
+                    <Text style={styles.sortButtonText}>
+                        {selectedSort} ▾
+                    </Text>
                 </TouchableOpacity>
             </View>
 
+            {sortVisible && (
+                <View style={styles.dropdown}>
+                    {['All', 'High Quality', 'Medium Quality', 'Defective', 'Diseased'].map(option => (
+                        <TouchableOpacity
+                            key={option}
+                            style={styles.dropdownItem}
+                            onPress={() => {
+                                setSelectedSort(option);
+                                setSortVisible(false);
+                            }}
+                        >
+                            <Text style={styles.dropdownItemText}>{option}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            )}
+
             {/* Report List */}
             <FlatList
-                data={reports}
+                data={filteredReports}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                     <View style={styles.reportItem}>
@@ -150,9 +235,13 @@ const styles = StyleSheet.create({
         shadowRadius: 3,
         elevation: 2,
     },
+    todayDate: {
+        backgroundColor: '#FFF3E9',
+    },
     dateText: { fontSize: 10, color: '#888' },
     dateNum: { fontSize: 16, fontWeight: 'bold', color: '#333' },
     dateTextSmall: { fontSize: 10, color: '#999' },
+    todayText: { color: '#000' },
     sortContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -185,6 +274,27 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderRadius: 10,
         marginRight: width(4),
+    },
+    dropdown: {
+        backgroundColor: '#fff',
+        marginHorizontal: width(4),
+        borderRadius: 8,
+        marginBottom: height(1),
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+    },
+    dropdownItem: {
+        paddingVertical: height(1),
+        paddingHorizontal: width(4),
+        borderBottomColor: '#eee',
+        borderBottomWidth: 1,
+    },
+    dropdownItemText: {
+        fontSize: 14,
+        color: '#B35500',
     },
     reportTitle: { fontSize: 16, fontWeight: '600', color: '#000' },
     reportDate: { fontSize: 14, color: '#555' },

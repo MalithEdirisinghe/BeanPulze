@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1047264981366",
+    "project_id": "beanpulze-54047",
+    "storage_bucket": "beanpulze-54047.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1047264981366:android:82c23f8c9e3b0b81b44a57",
+        "android_client_info": {
+          "package_name": "com.malith98.beanpulze"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1047264981366-3434ft65tuvpgd7m687mt6g1eceouk3g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.malith98.beanpulze",
+            "certificate_hash": "977dce34250901073dada630e1cfb83156192145"
+          }
+        },
+        {
+          "client_id": "1047264981366-2ucpcokkvcu5q2njv5eto9b531s6ecim.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLsJqQ2J-NW_3pDu8K98yt_dhs1svIOcQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1047264981366-2ucpcokkvcu5q2njv5eto9b531s6ecim.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

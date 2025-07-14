@@ -12,6 +12,7 @@ import More from './screens/More'
 import Disease from './screens/Disease'
 import EditProfile from './screens/EditProfile'
 import Report from './screens/Report'
+import Advice from './screens/Advice';
 import Toast from 'react-native-toast-message';
 
 const Stack = createNativeStackNavigator();
@@ -42,6 +43,7 @@ export default function App() {
         <Stack.Screen name='EditProfile' component={EditProfile} />
         <Stack.Screen name='Disease' component={Disease} />
         <Stack.Screen name='Report' component={Report} />
+        <Stack.Screen name='Advice' component={Advice} />
       </Stack.Navigator>
       <Toast />
     </NavigationContainer>

@@ -20,6 +20,9 @@ const SelectModal = ({
     multi = false,
 }) => {
     const handleSelect = (value) => {
+        const selectedOption = options.find(opt => opt.value === value);
+        console.log(`Selected: ${selectedOption?.label} (value: ${value})`);
+
         if (multi) {
             if (selectedValues.includes(value)) {
                 setSelectedValues(selectedValues.filter((v) => v !== value));
