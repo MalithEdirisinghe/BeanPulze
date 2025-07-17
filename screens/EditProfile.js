@@ -12,22 +12,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { width, height, fontSize } from '../constants/theme';
 import Header from '../components/Header';
 import { auth } from '../src/firebaseConfig';
-import { onAuthStateChanged } from 'firebase/auth';
+import {
+    updateProfile,
+    updatePassword,
+    EmailAuthProvider,
+    reauthenticateWithCredential,
+    onAuthStateChanged
+} from 'firebase/auth';
+import { useSelector, useDispatch } from 'react-redux';
+import { updateUsername } from '../redux/userSlice';
 
 const EditProfile = () => {
-    const [username, setUsername] = useState('hansani_a');
-    const [email, setEmail] = useState('user@gmail.com');
+    const dispatch = useDispatch();
+    const storedUsername = useSelector((state) => state.user.username);
+    const [username, setUsername] = useState('');
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [userEmail, setUserEmail] = useState('');
-    const [userName, setUserName] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
                 setUserEmail(user.email);
-                setUserName(user.displayName)
+                setUsername(user.displayName || '');
+                dispatch(updateUsername(user.displayName || ''));
             }
         });
 
@@ -36,8 +45,44 @@ const EditProfile = () => {
 
     const clearInput = (setter) => () => setter('');
 
-    const handleUpdate = () => {
-        // Add update logic here
+    const handleUpdate = async () => {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        if (!currentPassword) {
+            alert('Please enter your current password to make changes.');
+            return;
+        }
+
+        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+
+        try {
+            await reauthenticateWithCredential(user, credential);
+
+            // Update username if changed
+            if (username !== user.displayName) {
+                await updateProfile(user, { displayName: username });
+                dispatch(updateUsername(username)); // sync Redux state
+            }
+
+            // Update password if provided
+            if (newPassword) {
+                if (newPassword === confirmPassword) {
+                    await updatePassword(user, newPassword);
+                } else {
+                    alert('New passwords do not match.');
+                    return;
+                }
+            }
+
+            alert('Profile updated successfully!');
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (error) {
+            console.error('Update error:', error);
+            alert(`Update failed: ${error.message}`);
+        }
     };
 
     return (
@@ -49,15 +94,23 @@ const EditProfile = () => {
                     style={styles.banner}
                 />
                 <View style={styles.profileTextOverlay}>
-                    <Text style={styles.profileName}>{userName || 'Username'}</Text>
+                    <Text style={styles.profileName}>{storedUsername || 'Username'}</Text>
                     <Text style={styles.profileEmail}>{userEmail || 'email@example.com'}</Text>
                 </View>
             </View>
 
             <View style={styles.form}>
+                {/* Read-only email */}
+                <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Email (read-only)</Text>
+                    <View style={styles.inputWrapper}>
+                        <Text style={[styles.input, { color: '#999' }]}>{userEmail}</Text>
+                    </View>
+                </View>
+
+                {/* Editable Fields */}
                 {[
                     { label: 'New Username', value: username, setter: setUsername },
-                    { label: 'New Email', value: email, setter: setEmail },
                     { label: 'Current Password', value: currentPassword, setter: setCurrentPassword, secure: true },
                     { label: 'New Password', value: newPassword, setter: setNewPassword, secure: true },
                     { label: 'Confirm New Password', value: confirmPassword, setter: setConfirmPassword, secure: true },

@@ -7,12 +7,15 @@ import { auth } from '../src/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import CaptureOptionModal from '../components/CaptureOptionModal';
 import HelpModal from '../components/HelpModal';
+import { useSelector, useDispatch } from 'react-redux';
+import { updateUsername } from '../redux/userSlice';
 
 const Home = () => {
     const navigation = useNavigation();
-    const [userName, setUserName] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
     const [helpVisible, setHelpVisible] = useState(false);
+    const dispatch = useDispatch();
+    const username = useSelector((state) => state.user.username)
 
     const handleOptionSelect = (option) => {
         setModalVisible(false);
@@ -26,10 +29,10 @@ const Home = () => {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user && user.displayName) {
-                setUserName(user.displayName);
+                dispatch(updateUsername(user.displayName));
             } else if (user) {
-                // fallback if no display name is set
-                setUserName(user.email?.split('@')[0] || 'User');
+                const fallbackName = user.email?.split('@')[0] || 'User';
+                dispatch(updateUsername(fallbackName));
             }
         });
 
@@ -47,8 +50,8 @@ const Home = () => {
                 >
                     {/* Greeting Section */}
                     <View style={styles.greetingRow}>
-                        <Text style={styles.greeting}>Greetings, {userName}!</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                        <Text style={styles.greeting}>Greetings, {username}!</Text> 
+                        <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
                             <Image
                                 source={require('../assets/profile_icon.png')}
                                 style={styles.profileIcon}
@@ -56,11 +59,11 @@ const Home = () => {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Home Section */}
                     <Text style={styles.heading}>Home</Text>
                     <Text style={styles.subHeading}>Capture. Analyze. Perfect Your Bean.</Text>
                 </ImageBackground>
             </View>
+
             {/* Quick Actions */}
             <View style={styles.textContain}>
                 <Text style={styles.quickActionsText}>Quick Actions</Text>

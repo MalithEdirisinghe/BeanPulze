@@ -16,18 +16,20 @@ import { auth } from '../src/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signOut } from 'firebase/auth';
+import { useSelector, useDispatch } from 'react-redux';
+import { updateUsername } from '../redux/userSlice';
 
 const More = () => {
     const navigation = useNavigation();
-    const [userName, setUserName] = useState('');
+    const username = useSelector((state) => state.user.username);
+    const dispatch = useDispatch();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user && user.displayName) {
-                setUserName(user.displayName);
-            } else if (user) {
-                // fallback if no display name is set
-                setUserName(user.email?.split('@')[0] || 'User');
+            if (user?.displayName) {
+                dispatch(updateUsername(user.displayName));
+            } else if (user?.email) {
+                dispatch(updateUsername(user.email.split('@')[0]));
             }
         });
 
@@ -59,7 +61,7 @@ const More = () => {
                     style={styles.profileImage}
                 />
                 <View style={styles.profileTextContainer}>
-                    <Text style={styles.profileName}>{userName}</Text>
+                    <Text style={styles.profileName}>{username}</Text>
                     <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
                         <Text style={styles.editProfile}>Edit Profile</Text>
                     </TouchableOpacity>
