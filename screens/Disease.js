@@ -7,15 +7,22 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
+    ActivityIndicator,
 } from 'react-native';
 import { height, width, fontSize } from '../constants/theme';
 import Header from '../components/Header';
 import { StatusBar } from 'expo-status-bar';
 import SelectModal from '../components/SelectModal';
+import { predictDisease } from '../src/api/api';
+import ResultModal from '../components/ResultModal';
+import Toast from 'react-native-toast-message';
 
 const Disease = () => {
     const [symptomModalVisible, setSymptomModalVisible] = useState(false);
-    const [selectedSymptoms, setSelectedSymptoms] = useState([]);
+    const [selectedSymptoms, setSelectedSymptoms] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [resultModalVisible, setResultModalVisible] = useState(false);
+    const [predictionResult, setPredictionResult] = useState('');
 
     const symptomOptions = [
         { label: 'Resoaked appearance, Peeling parchment, Visible moisture bubbles', value: '0' },
@@ -79,41 +86,75 @@ const Disease = () => {
         { label: 'No', value: '0', emoji: '☀️' },
     ];
 
-    // const handleSubmit = () => {
-    //     console.log({
-    //         symptom: selectedSymptoms,
-    //         category: selectedCategory,
-    //         region: selectedRegion,
-    //         dehydrate: selectedDehydrate,
-    //         rain: selectedRain,
-    //     });
-    // };
+    const validateForm = () => {
+        if (selectedSymptoms === null) {
+            Toast.show({
+                type: 'error',
+                text1: 'Missing Symptom',
+                text2: 'Please select a symptom.',
+            });
+            return false;
+        }
+        if (selectedCategory === null) {
+            Toast.show({
+                type: 'error',
+                text1: 'Missing Category',
+                text2: 'Please select a category.',
+            });
+            return false;
+        }
+        if (selectedRegion === null) {
+            Toast.show({
+                type: 'error',
+                text1: 'Missing Region',
+                text2: 'Please select a region.',
+            });
+            return false;
+        }
+        if (selectedDehydrate === null) {
+            Toast.show({
+                type: 'error',
+                text1: 'Missing Dehydration Duration',
+                text2: 'Please select dehydration duration.',
+            });
+            return false;
+        }
+        if (selectedRain === null) {
+            Toast.show({
+                type: 'error',
+                text1: 'Missing Rain Info',
+                text2: 'Please select whether beans caught rain or mist.',
+            });
+            return false;
+        }
+        return true;
+    };
+
     const handleSubmit = async () => {
-        // Use first selected symptom for mock (can modify to send all if API supports)
+        if (!validateForm()) return;
         const body = {
-            Symptoms: parseInt(selectedSymptoms[0] || 0), // default to 0 if empty
-            Category: parseInt(selectedCategory ?? 0),
-            Region: parseInt(selectedRegion ?? 0),
-            Dehydration_Duration: parseInt(selectedDehydrate ?? 0),
-            Caught_Rain_or_Mist: parseInt(selectedRain ?? 0),
+            symptoms_lable: parseInt(selectedSymptoms ?? 0),
+            category: parseInt(selectedCategory ?? 0),
+            region: parseInt(selectedRegion ?? 0),
+            dehydration_Duration: parseInt(selectedDehydrate ?? 0),
+            "caught_Rain/Mist": parseInt(selectedRain ?? 0),
         };
 
         console.log('Submitting:', body);
+        setLoading(true);
 
         try {
-            const response = await fetch('https://mocki.io/v1/149c0d1f-93e3-44be-92a2-e2261d10eb7e', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(body),
-            });
-
-            const result = await response.json();
+            const result = await predictDisease(body);
             console.log('API Response:', result);
-            // Navigate or show result here
+
+            setPredictionResult(result);
+
+            setResultModalVisible(true);
         } catch (error) {
-            console.error('API Error:', error);
+            setPredictionResult('An error occurred while predicting. Please try again.');
+            setResultModalVisible(true);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -129,9 +170,9 @@ const Disease = () => {
                 <Text style={styles.label}>Symptom</Text>
                 <TouchableOpacity style={styles.customDropdown} onPress={() => setSymptomModalVisible(true)}>
                     <Text style={styles.dropdownText}>
-                        {selectedSymptoms.length > 0
-                            ? selectedSymptoms.map(val => symptomOptions.find(o => o.value === val)?.label).join(', ')
-                            : 'Select symptom(s)'}
+                        {selectedSymptoms
+                            ? symptomOptions.find(o => o.value === selectedSymptoms)?.label
+                            : 'Select symptom'}
                     </Text>
                 </TouchableOpacity>
 
@@ -185,20 +226,34 @@ const Disease = () => {
                 </View>
 
                 {/* SUBMIT */}
-                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                    <Text style={styles.submitText}>Predict Disease</Text>
+                <TouchableOpacity
+                    style={styles.submitButton}
+                    onPress={handleSubmit}
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <Text style={styles.submitText}>Predict Disease</Text>
+                    )}
                 </TouchableOpacity>
             </ScrollView>
 
+            <ResultModal
+                visible={resultModalVisible}
+                onClose={() => setResultModalVisible(false)}
+                result={predictionResult}
+                category="disease"
+            />
+
             {/* MODALS */}
             <SelectModal
-                title="Select Symptoms"
+                title="Select Symptom"
                 visible={symptomModalVisible}
                 onClose={() => setSymptomModalVisible(false)}
                 options={symptomOptions}
                 selectedValues={selectedSymptoms}
                 setSelectedValues={setSelectedSymptoms}
-                multi
             />
             <SelectModal
                 title="Select Category"
