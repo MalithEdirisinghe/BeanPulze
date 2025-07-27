@@ -14,10 +14,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { width, height, fontSize } from '../constants/theme';
 import { StatusBar } from 'expo-status-bar';
 import Header from '../components/Header';
+import { predictImage } from '../src/api/api';
+import Loader from '../components/Loader';
 
 const Capture = () => {
     const navigation = useNavigation();
     const [image, setImage] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [aiResult, setAiResult] = useState(null);
 
     const handlePickImage = async () => {
         const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
@@ -60,9 +64,31 @@ const Capture = () => {
         ]);
     };
 
-    const handleSendToAI = () => {
-        // Replace with your actual AI send logic
-        Alert.alert('Image sent to AI for analysis!');
+    const handleSendToAI = async () => {
+        if (!image) return;
+        setLoading(true);
+        setAiResult(null);
+
+        try {
+            const result = await predictImage(image);
+            console.log('AI Response:', result);
+            setAiResult(result);
+
+            Toast.show({
+                type: 'success',
+                text1: 'Analysis Complete',
+                text2: `Class: ${result.predicted_class ?? 'N/A'}`,
+            });
+
+        } catch (error) {
+            Toast.show({
+                type: 'error',
+                text1: 'Image Prediction Failed',
+                text2: error.message || 'Something went wrong.',
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleViewAdvice = () => {
@@ -82,7 +108,6 @@ const Capture = () => {
                     style={styles.coffeeImage}
                     resizeMode="cover"
                 />
-                {/* <Text style={styles.captureText}>Take a photo to check quality</Text> */}
                 {!image ? (
                     <Text style={styles.captureText}>Take a photo to check quality</Text>
                 ) : (
@@ -99,27 +124,37 @@ const Capture = () => {
                         <Text style={styles.buttonText}>Capture or Select Image</Text>
                     </TouchableOpacity>
                 ) : (
-                    <TouchableOpacity style={styles.aiButton} onPress={handleSendToAI}>
-                        <Text style={styles.buttonText}>Save Image & Send to AI</Text>
+                    <TouchableOpacity
+                        style={[styles.aiButton, loading && styles.disabledButton]}
+                        onPress={handleSendToAI}
+                        disabled={loading}
+                    >
+                        <Text style={styles.buttonText}>
+                            {loading ? 'Processing...' : 'Send to AI'}
+                        </Text>
                     </TouchableOpacity>
                 )}
             </View>
 
             {/* Summary Card */}
-            <View style={styles.summaryCard}>
-                <Text style={styles.summaryTitle}>Summary</Text>
-                <Text style={styles.summaryText}>Coffee Type : Arabica</Text>
-                <Text style={styles.summaryText}>Quality Score : 75%</Text>
-                <Text style={styles.summaryText}>Quality Mode : Green (Good)</Text>
-
-                <View style={styles.diseaseBox}>
-                    <Text style={styles.diseaseText}>No disease detected</Text>
+            {loading ? (
+                <View style={styles.loaderWrapper}>
+                    <Loader />
                 </View>
+            ) : aiResult ? (
+                <View style={styles.summaryCard}>
+                    <Text style={styles.summaryTitle}>Summary</Text>
 
-                <TouchableOpacity style={styles.viewAdviceButton} onPress={handleViewAdvice}>
-                    <Text style={styles.buttonText}>Save & View Advice</Text>
-                </TouchableOpacity>
-            </View>
+                    <Text style={styles.summaryText}>Coffee Bean: {aiResult.is_coffee_bean ? 'Yes' : 'No'}</Text>
+                    <Text style={styles.summaryText}>Bean Type Confidence: {aiResult.bean_type_confidence}</Text>
+                    <Text style={styles.summaryText}>Prediction Confidence: {aiResult.is_coffee_bean_confidence}</Text>
+                    <Text style={styles.summaryText}>Predicted Class: {aiResult.predicted_class}</Text>
+
+                    <TouchableOpacity style={styles.viewAdviceButton} onPress={handleViewAdvice}>
+                        <Text style={styles.buttonText}>Save & View Advice</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : null}
         </ScrollView>
     );
 };
@@ -211,5 +246,16 @@ const styles = StyleSheet.create({
         color: '#FF7A00',
         fontWeight: 'bold',
         textDecorationLine: 'underline',
-    }
+    },
+    loaderWrapper: {
+        marginHorizontal: width(4),
+        marginBottom: height(2),
+        paddingVertical: height(4),
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    disabledButton: {
+        backgroundColor: '#CCCCCC',
+        opacity: 0.6,
+    },
 });
