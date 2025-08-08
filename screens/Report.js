@@ -8,7 +8,6 @@ import {
     FlatList,
     Image,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { width, height, fontSize, colors } from '../constants/theme';
 import Header from '../components/Header';
 import { StatusBar } from 'expo-status-bar';
@@ -17,7 +16,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../src/firebaseConfig';
 import { useSelector } from 'react-redux';
 import { startOfDay, endOfDay, isWithinInterval, parseISO } from 'date-fns';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Loader from '../components/Loader';
 
 const Report = () => {
     const [activeTab, setActiveTab] = useState('Today');
@@ -27,6 +26,7 @@ const Report = () => {
     const [selectedDate, setSelectedDate] = useState(format(today, 'yyyy-MM-dd'));
     const scrollViewRef = useRef(null);
     const [reports, setReports] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     // Get logged-in user (assuming it's stored in redux)
     const user = useSelector(state => state.user); // check your actual state shape
@@ -57,6 +57,7 @@ const Report = () => {
 
     useEffect(() => {
         const fetchReports = async () => {
+            setLoading(true);
             if (!user?.uid) {
                 console.log('❌ No UID found in Redux user.');
                 return;
@@ -118,6 +119,7 @@ const Report = () => {
 
                 console.log('✅ Final filtered reports:', filtered);
                 setReports(filtered);
+                setLoading(false);
             } catch (error) {
                 console.error('🔥 Firestore fetch error:', error);
             }
@@ -181,7 +183,7 @@ const Report = () => {
                             key={i}
                             onPress={() => {
                                 const formatted = format(date, 'yyyy-MM-dd');
-                                console.log('Date pressed:', formatted); // 🔍 log selected date
+                                console.log('Date pressed:', formatted);
                                 setSelectedDate(formatted);
                             }}
                             style={[
@@ -205,31 +207,44 @@ const Report = () => {
             </ScrollView>
 
             {/* Report List */}
-            <FlatList
-                data={reports}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <View style={styles.reportItem}>
-                        <View style={[styles.iconBox, { backgroundColor: item.label?.toLowerCase() === 'disease' ? '#F9AA9D' : item.color || '#eee' }]}>
-                            {/* <MaterialCommunityIcons  name="grain" size={24} color={item.iconColor || '#333'} /> */}
-                            <Image source={require('../assets/beans_icon.png')}
-                            style={styles.beanIcon}></Image>
+            {loading ? (
+                <Loader text="LOADING" />
+            ) : (
+                <FlatList
+                    data={reports}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                        <View style={styles.reportItem}>
+                            <View style={[
+                                styles.iconBox,
+                                {
+                                    backgroundColor:
+                                        item.label?.toLowerCase() === 'disease'
+                                            ? '#F9AA9D'
+                                            : item.color || '#eee'
+                                }
+                            ]}>
+                                <Image
+                                    source={require('../assets/beans_icon.png')}
+                                    style={styles.beanIcon}
+                                />
+                            </View>
+                            <View>
+                                <Text style={styles.reportTitle}>
+                                    {item.label?.charAt(0).toUpperCase() + item.label?.slice(1)}
+                                </Text>
+                                <Text style={styles.reportDate}>({item.date})</Text>
+                            </View>
                         </View>
-                        <View>
-                            <Text style={styles.reportTitle}>
-                                {item.label?.charAt(0).toUpperCase() + item.label?.slice(1)}
-                            </Text>
-                            <Text style={styles.reportDate}>({item.date})</Text>
-                        </View>
-                    </View>
-                )}
-                contentContainerStyle={{ paddingBottom: 40 }}
-                ListEmptyComponent={
-                    <Text style={{ textAlign: 'center', marginTop: 20, color: '#666' }}>
-                        No reports found for selected date.
-                    </Text>
-                }
-            />
+                    )}
+                    contentContainerStyle={{ paddingBottom: 40 }}
+                    ListEmptyComponent={
+                        <Text style={{ textAlign: 'center', marginTop: 20, color: '#666' }}>
+                            No reports found for selected date.
+                        </Text>
+                    }
+                />
+            )}
         </View>
     );
 };

@@ -159,7 +159,7 @@ const Capture = () => {
             {/* Summary Card */}
             {loading ? (
                 <View style={styles.loaderWrapper}>
-                    <Loader />
+                    <Loader text="PROCESSING"/>
                 </View>
             ) : aiResult ? (
                 <View style={styles.summaryCard}>

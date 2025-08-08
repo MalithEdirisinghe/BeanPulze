@@ -2,8 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated, Dimensions } from 'react-native';
 import { height, width, fontSize } from '../constants/theme';
 
-const Loader = () => {
-  const letters = ['P', 'R', 'O', 'C', 'E', 'S', 'S', 'I', 'N', 'G'];
+const Loader = ({ text = "PROCESSING" }) => {
+  const letters = text.split('');
   
   const animatedValues = useRef(
     Array.from({ length: letters.length }, () => ({
