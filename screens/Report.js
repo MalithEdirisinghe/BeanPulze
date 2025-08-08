@@ -6,19 +6,18 @@ import {
     TouchableOpacity,
     ScrollView,
     FlatList,
+    Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { width, height, fontSize, colors } from '../constants/theme';
 import Header from '../components/Header';
 import { StatusBar } from 'expo-status-bar';
 import { format, addDays } from 'date-fns';
-
-const reports = [
-    { id: '1', label: 'High Quality', date: '20/04/2025', color: '#D1ECFF', iconColor: '#2196F3' },
-    { id: '2', label: 'Medium Quality', date: '20/04/2025', color: '#D7FFE0', iconColor: '#00C853' },
-    { id: '3', label: 'Defective', date: '13/04/2025', color: '#FFF3CD', iconColor: '#FF9800' },
-    { id: '4', label: 'Diseased', date: '15/04/2025', color: '#FFE2E0', iconColor: '#F44336' },
-];
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../src/firebaseConfig';
+import { useSelector } from 'react-redux';
+import { startOfDay, endOfDay, isWithinInterval, parseISO } from 'date-fns';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const Report = () => {
     const [activeTab, setActiveTab] = useState('Today');
@@ -27,18 +26,17 @@ const Report = () => {
     const dateRange = Array.from({ length: 30 }, (_, i) => addDays(baseDate, i - 15));
     const [selectedDate, setSelectedDate] = useState(format(today, 'yyyy-MM-dd'));
     const scrollViewRef = useRef(null);
-    const [sortVisible, setSortVisible] = useState(false);
-    const [selectedSort, setSelectedSort] = useState('All');
+    const [reports, setReports] = useState([]);
 
-    // Function to scroll to today's date
+    // Get logged-in user (assuming it's stored in redux)
+    const user = useSelector(state => state.user); // check your actual state shape
+
     const scrollToToday = () => {
         const todayIndex = dateRange.findIndex(date =>
             format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
         );
-
         if (todayIndex !== -1 && scrollViewRef.current) {
-            // Calculate scroll position (each date box width + margin)
-            const scrollPosition = todayIndex * (width(14) + width(2)) - width(20); // Offset to center
+            const scrollPosition = todayIndex * (width(14) + width(2)) - width(20);
             scrollViewRef.current.scrollTo({
                 x: Math.max(0, scrollPosition),
                 animated: true
@@ -46,19 +44,86 @@ const Report = () => {
         }
     };
 
-    // Scroll to today when component mounts or baseDate changes
     useEffect(() => {
-        // Small delay to ensure ScrollView is rendered
         const timer = setTimeout(() => {
             scrollToToday();
         }, 100);
-
         return () => clearTimeout(timer);
     }, [baseDate]);
 
-    const filteredReports = selectedSort === 'All'
-        ? reports
-        : reports.filter(r => r.label === selectedSort);
+    useEffect(() => {
+        console.log('🧠 Redux user:', user);
+    }, [user]);
+
+    useEffect(() => {
+        const fetchReports = async () => {
+            if (!user?.uid) {
+                console.log('❌ No UID found in Redux user.');
+                return;
+            }
+
+            console.log('✅ Fetching for UID:', user.uid);
+            console.log('📆 Selected date:', selectedDate);
+
+            const predictionsPath = collection(db, 'users', user.uid, 'predictions');
+            const predictionsWithImagePath = collection(db, 'users', user.uid, 'predictions_with_image');
+
+            try {
+                const [predictionsSnap, imagePredictionsSnap] = await Promise.all([
+                    getDocs(predictionsPath),
+                    getDocs(predictionsWithImagePath),
+                ]);
+
+                console.log('📦 Docs from predictions:', predictionsSnap.size);
+                console.log('📷 Docs from predictions_with_image:', imagePredictionsSnap.size);
+
+                const selected = parseISO(selectedDate);
+                const filtered = [];
+
+                const handleDoc = (doc, source = 'default') => {
+                    const data = doc.data();
+
+                    // Use `createdAt` for predictions and `timestamp` for predictions_with_image
+                    const rawTimestamp = data.createdAt || data.timestamp;
+                    const createdAt = rawTimestamp?.toDate?.();
+
+                    console.log(`🔎 [${source}] Doc ID: ${doc.id}`);
+                    console.log('  🔹 createdAt:', createdAt);
+
+                    if (
+                        createdAt &&
+                        isWithinInterval(createdAt, {
+                            start: startOfDay(selected),
+                            end: endOfDay(selected),
+                        })
+                    ) {
+                        console.log('✅ MATCHED:', doc.id);
+
+                        filtered.push({
+                            id: doc.id,
+                            source,
+                            label: data.category || data.predicted_class || 'Unknown',
+                            date: format(createdAt, 'yyyy-MM-dd'),
+                            color: '#D1ECFF',
+                            iconColor: '#2196F3',
+                            ...data,
+                        });
+                    } else {
+                        console.log('❌ SKIPPED:', doc.id);
+                    }
+                };
+
+                predictionsSnap.forEach(doc => handleDoc(doc, 'predictions'));
+                imagePredictionsSnap.forEach(doc => handleDoc(doc, 'predictions_with_image'));
+
+                console.log('✅ Final filtered reports:', filtered);
+                setReports(filtered);
+            } catch (error) {
+                console.error('🔥 Firestore fetch error:', error);
+            }
+        };
+        fetchReports();
+    }, [selectedDate, user?.uid]);
 
     return (
         <View style={styles.container}>
@@ -114,29 +179,24 @@ const Report = () => {
                     return (
                         <TouchableOpacity
                             key={i}
-                            onPress={() => setSelectedDate(format(date, 'yyyy-MM-dd'))}
+                            onPress={() => {
+                                const formatted = format(date, 'yyyy-MM-dd');
+                                console.log('Date pressed:', formatted); // 🔍 log selected date
+                                setSelectedDate(formatted);
+                            }}
                             style={[
                                 styles.dateBox,
                                 isSelected && styles.selectedDate,
                                 isToday && styles.todayDate
                             ]}
                         >
-                            <Text style={[
-                                styles.dateText,
-                                isToday && styles.todayText
-                            ]}>
+                            <Text style={[styles.dateText, isToday && styles.todayText]}>
                                 {format(date, 'MMM').toUpperCase()}
                             </Text>
-                            <Text style={[
-                                styles.dateNum,
-                                isToday && styles.todayText
-                            ]}>
+                            <Text style={[styles.dateNum, isToday && styles.todayText]}>
                                 {format(date, 'dd')}
                             </Text>
-                            <Text style={[
-                                styles.dateTextSmall,
-                                isToday && styles.todayText
-                            ]}>
+                            <Text style={[styles.dateTextSmall, isToday && styles.todayText]}>
                                 {format(date, 'EEE').toUpperCase()}
                             </Text>
                         </TouchableOpacity>
@@ -144,52 +204,31 @@ const Report = () => {
                 })}
             </ScrollView>
 
-            {/* Sorting Dropdown (static for now) */}
-            <View style={styles.sortContainer}>
-                <Text style={styles.sortLabel}>Sorting Options :</Text>
-                <TouchableOpacity
-                    style={styles.sortButton}
-                    onPress={() => setSortVisible(!sortVisible)}
-                >
-                    <Text style={styles.sortButtonText}>
-                        {selectedSort} ▾
-                    </Text>
-                </TouchableOpacity>
-            </View>
-
-            {sortVisible && (
-                <View style={styles.dropdown}>
-                    {['All', 'High Quality', 'Medium Quality', 'Defective', 'Diseased'].map(option => (
-                        <TouchableOpacity
-                            key={option}
-                            style={styles.dropdownItem}
-                            onPress={() => {
-                                setSelectedSort(option);
-                                setSortVisible(false);
-                            }}
-                        >
-                            <Text style={styles.dropdownItemText}>{option}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            )}
-
             {/* Report List */}
             <FlatList
-                data={filteredReports}
+                data={reports}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                     <View style={styles.reportItem}>
-                        <View style={[styles.iconBox, { backgroundColor: item.color }]}>
-                            <Ionicons name="people" size={24} color={item.iconColor} />
+                        <View style={[styles.iconBox, { backgroundColor: item.label?.toLowerCase() === 'disease' ? '#F9AA9D' : item.color || '#eee' }]}>
+                            {/* <MaterialCommunityIcons  name="grain" size={24} color={item.iconColor || '#333'} /> */}
+                            <Image source={require('../assets/beans_icon.png')}
+                            style={styles.beanIcon}></Image>
                         </View>
                         <View>
-                            <Text style={styles.reportTitle}>{item.label}</Text>
+                            <Text style={styles.reportTitle}>
+                                {item.label?.charAt(0).toUpperCase() + item.label?.slice(1)}
+                            </Text>
                             <Text style={styles.reportDate}>({item.date})</Text>
                         </View>
                     </View>
                 )}
                 contentContainerStyle={{ paddingBottom: 40 }}
+                ListEmptyComponent={
+                    <Text style={{ textAlign: 'center', marginTop: 20, color: '#666' }}>
+                        No reports found for selected date.
+                    </Text>
+                }
             />
         </View>
     );
@@ -207,6 +246,7 @@ const styles = StyleSheet.create({
         paddingVertical: height(0.7),
         paddingHorizontal: width(5),
         borderRadius: 25,
+        borderWidth: width(0.3),
     },
     tabActive: {
         backgroundColor: '#2F1606',
@@ -217,6 +257,7 @@ const styles = StyleSheet.create({
         paddingVertical: height(1),
         backgroundColor: '#fff',
         paddingHorizontal: width(1),
+        maxHeight: height(15)
     },
     dateBox: {
         alignItems: 'center',
@@ -266,6 +307,7 @@ const styles = StyleSheet.create({
         marginVertical: height(0.5),
         marginHorizontal: width(2),
         borderRadius: 10,
+        top: height(5)
     },
     iconBox: {
         width: width(12),
@@ -291,6 +333,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: width(4),
         borderBottomColor: '#eee',
         borderBottomWidth: 1,
+    },
+    beanIcon: {
+        height: height(3.15),
+        width: width(6.6)
     },
     dropdownItemText: {
         fontSize: 14,

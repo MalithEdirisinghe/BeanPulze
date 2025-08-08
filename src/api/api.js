@@ -1,4 +1,4 @@
-const BASE_URL = 'http://52.204.147.119:5000';
+import { BASE_URL } from '@env';
 
 export const predictDisease = async (data) => {
     try {

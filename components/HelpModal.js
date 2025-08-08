@@ -1,8 +1,43 @@
-import React from 'react';
-import { Modal, View, Text, StyleSheet, TouchableWithoutFeedback, ScrollView } from 'react-native';
+import React, { useRef } from 'react';
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  ScrollView,
+  Animated,
+  PanResponder,
+} from 'react-native';
 import { height, width, fontSize } from '../constants/theme';
+import * as Haptics from 'expo-haptics';
 
 const HelpModal = ({ visible, onClose }) => {
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return gestureState.dy > 5;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          translateY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) {
+          onClose();
+        } else {
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
   return (
     <Modal
       visible={visible}
@@ -13,25 +48,49 @@ const HelpModal = ({ visible, onClose }) => {
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay} />
       </TouchableWithoutFeedback>
-      <View style={styles.modalContent}>
-        <View style={styles.bar} />
+
+      <Animated.View
+        style={[styles.modalContent, { transform: [{ translateY }] }]}
+      >
+        <View
+          {...panResponder.panHandlers}
+          onStartShouldSetResponder={() => true}
+          onResponderGrant={() => {
+            Haptics.selectionAsync();
+          }}
+        >
+          <View style={styles.bar} />
+        </View>
+
         <ScrollView contentContainerStyle={styles.innerContent}>
           <Text style={styles.title}>Help and Support</Text>
           <Text style={styles.subTitle}>How to Use BeanPulze mobile app</Text>
 
           <Text style={styles.step}>Step 1:</Text>
-          <Text style={styles.desc}>Capture your bean image or upload from your gallery</Text>
-          <Text style={styles.bullet}>• <Text style={styles.bold}>Acceptance of the image:</Text></Text>
-          <Text style={styles.bullet}>• <Text style={styles.bold}>Quality:</Text></Text>
-          <Text style={styles.bullet}>• <Text style={styles.bold}>Size:</Text></Text>
+          <Text style={styles.desc}>Choose an option first</Text>
+          <Text style={styles.desc}>
+            (Take photo to check quality, Check disease, cancel)
+          </Text>
+          <Text style={styles.desc}>Option 1: Take photo to check quality,</Text>
+          <Text style={styles.bullet}>
+            • <Text style={styles.bold}>Quality:</Text> Basic quality standard
+          </Text>
+          <Text style={styles.bullet}>
+            • <Text style={styles.bold}>Size:</Text> 224 x 224 input size
+          </Text>
+
+          <Text style={styles.desc}>Option 2: Check disease</Text>
+          <Text style={styles.desc}>
+            Fill symptoms (One or more can be select), select category, select region, Dehydration duration and Caught rain/mist (yes or no)
+          </Text>
 
           <Text style={styles.step}>Step 2:</Text>
-          <Text style={styles.desc}>View Intelligent Insights Report</Text>
+          <Text style={styles.desc}>View your past reports analysis</Text>
 
           <Text style={styles.step}>Step 3:</Text>
-          <Text style={styles.desc}>Save & Access Anytime</Text>
+          <Text style={styles.desc}>More options for edit profile</Text>
         </ScrollView>
-      </View>
+      </Animated.View>
     </Modal>
   );
 };

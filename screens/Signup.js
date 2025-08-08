@@ -22,6 +22,8 @@ import { makeRedirectUri } from 'expo-auth-session';
 import { useNavigation } from '@react-navigation/native';
 import CustomBackHandler from '../components/CustomBackHandler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch, useSelector } from 'react-redux';
+import { setUser } from '../redux/userSlice';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -34,6 +36,7 @@ const Signup = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const dispatch = useDispatch();
 
     const [request, response, promptAsync] = Google.useAuthRequest({
         expoClientId: '1047264981366-2ucpcokkvcu5q2njv5eto9b531s6ecim.apps.googleusercontent.com',
@@ -51,11 +54,20 @@ const Signup = () => {
 
             signInWithCredential(auth, credential)
                 .then(userCredential => {
+                    const user = userCredential.user; // ✅ get user object first
+
+                    dispatch(setUser({
+                        username: user.displayName || '',
+                        email: user.email,
+                        uid: user.uid,
+                    }));
+
                     Toast.show({
                         type: 'success',
                         text1: 'Logged In',
-                        text2: `Welcome ${userCredential.user.email}`,
+                        text2: `Welcome ${user.displayName}`,
                     });
+
                     navigation.navigate('Home');
                 })
                 .catch(error => {
@@ -97,6 +109,13 @@ const Signup = () => {
                 await updateProfile(user, {
                     displayName: name,
                 });
+
+                // Now update Redux with the correct name
+                dispatch(setUser({
+                    username: name,
+                    email: user.email,
+                    uid: user.uid,
+                }));
 
                 await AsyncStorage.setItem('isLoggedIn', 'true');
 

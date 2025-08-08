@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,8 @@ import * as WebBrowser from 'expo-web-browser';
 import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
 import { makeRedirectUri } from 'expo-auth-session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch, useSelector } from 'react-redux';
+import { setUser } from '../redux/userSlice';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -30,6 +32,8 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.user);
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     expoClientId: '1047264981366-2ucpcokkvcu5q2njv5eto9b531s6ecim.apps.googleusercontent.com',
@@ -39,6 +43,10 @@ const Login = () => {
       useProxy: false,
     }),
   });
+
+  useEffect(() => {
+    console.log('🔥 UID from Redux:', user?.uid);
+  }, [user]);
 
   React.useEffect(() => {
     if (response?.type === 'success') {
@@ -58,10 +66,19 @@ const Login = () => {
 
       signInWithCredential(auth, credential)
         .then(userCredential => {
+          const user = userCredential.user;
+
+          // Store in Redux
+          dispatch(setUser({
+            username: user.displayName || '',
+            email: user.email,
+            uid: user.uid,
+          }));
+
           Toast.show({
             type: 'success',
             text1: 'Logged In',
-            text2: `Welcome ${userCredential.user.email}`,
+            text2: `Welcome ${user.displayName}`,
           });
 
           navigation.navigate('Home');
@@ -92,7 +109,13 @@ const Login = () => {
     signInWithEmailAndPassword(auth, email, password)
       .then(async (userCredential) => {
         const user = userCredential.user;
-        console.log('Logged in:', user.email);
+
+        // Store in Redux
+        dispatch(setUser({
+          username: user.displayName || '', // in case it's null
+          email: user.email,
+          uid: user.uid,
+        }));
 
         await AsyncStorage.setItem('isLoggedIn', 'true');
 
