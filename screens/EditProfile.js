@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     Image,
     ScrollView,
+    ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { width, height, fontSize } from '../constants/theme';
@@ -30,6 +31,7 @@ const EditProfile = () => {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [userEmail, setUserEmail] = useState('');
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -53,6 +55,7 @@ const EditProfile = () => {
             alert('Please enter your current password to make changes.');
             return;
         }
+        setLoading(true);
 
         const credential = EmailAuthProvider.credential(user.email, currentPassword);
 
@@ -82,7 +85,10 @@ const EditProfile = () => {
         } catch (error) {
             console.error('Update error:', error);
             alert(`Update failed: ${error.message}`);
+        } finally {
+            setLoading(false);
         }
+
     };
 
     return (
@@ -133,8 +139,12 @@ const EditProfile = () => {
                     </View>
                 ))}
 
-                <TouchableOpacity style={styles.updateButton} onPress={handleUpdate}>
-                    <Text style={styles.updateText}>Update</Text>
+                <TouchableOpacity style={styles.updateButton} onPress={handleUpdate} disabled={loading}>
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <Text style={styles.updateText}>Update</Text>
+                    )}
                 </TouchableOpacity>
             </View>
         </ScrollView>

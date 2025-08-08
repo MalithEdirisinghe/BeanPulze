@@ -16,6 +16,8 @@ import { StatusBar } from 'expo-status-bar';
 import Header from '../components/Header';
 import { predictImage } from '../src/api/api';
 import Loader from '../components/Loader';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { db, auth } from '../src/firebaseConfig';
 
 const Capture = () => {
     const navigation = useNavigation();
@@ -91,8 +93,26 @@ const Capture = () => {
         }
     };
 
-    const handleViewAdvice = () => {
-        navigation.navigate('Advice');
+    const handleViewAdvice = async () => {
+        if (!aiResult || !auth.currentUser) return;
+
+        try {
+            const userId = auth.currentUser.uid;
+
+            await addDoc(collection(db, 'users', userId, 'predictions_with_image'), {
+                timestamp: Timestamp.now(),
+                imageUri: image,
+                is_coffee_bean: aiResult.is_coffee_bean,
+                bean_type_confidence: aiResult.bean_type_confidence,
+                is_coffee_bean_confidence: aiResult.is_coffee_bean_confidence,
+                predicted_class: aiResult.predicted_class,
+            });
+
+            navigation.navigate('Advice');
+        } catch (error) {
+            Alert.alert('Error', 'Failed to save analysis. Please try again.');
+            console.error('Firestore Save Error:', error);
+        }
     };
 
     return (
