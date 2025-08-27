@@ -2,6 +2,7 @@
   "expo": {
     "name": "Bean Pulze",
     "slug": "bean-pulze",
+    "owner": "malith98",
     "scheme": "com.googleusercontent.apps.1047264981366-3434ft65tuvpgd7m687mt6g1eceouk3g",
     "version": "1.0.0",
     "orientation": "portrait",
