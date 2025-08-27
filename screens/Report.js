@@ -1,3 +1,4 @@
+// // Report.js
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
@@ -8,17 +9,25 @@ import {
     FlatList,
     Image,
 } from 'react-native';
-import { width, height, fontSize, colors } from '../constants/theme';
+import { width, height } from '../constants/theme';
 import Header from '../components/Header';
 import { StatusBar } from 'expo-status-bar';
 import { format, addDays } from 'date-fns';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import {
+    collection,
+    query,
+    where,
+    getDocs,
+    Timestamp,
+} from 'firebase/firestore';
 import { db } from '../src/firebaseConfig';
 import { useSelector } from 'react-redux';
-import { startOfDay, endOfDay, isWithinInterval, parseISO } from 'date-fns';
+import { startOfDay, endOfDay, parseISO } from 'date-fns';
 import Loader from '../components/Loader';
+import { useNavigation } from '@react-navigation/native';
 
 const Report = () => {
+    const navigation = useNavigation();
     const [activeTab, setActiveTab] = useState('Today');
     const today = new Date();
     const [baseDate, setBaseDate] = useState(new Date());
@@ -29,101 +38,146 @@ const Report = () => {
     const [loading, setLoading] = useState(true);
 
     // Get logged-in user (assuming it's stored in redux)
-    const user = useSelector(state => state.user); // check your actual state shape
+    const user = useSelector((state) => state.user);
 
     const scrollToToday = () => {
-        const todayIndex = dateRange.findIndex(date =>
-            format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
+        const todayIndex = dateRange.findIndex(
+            (date) => format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
         );
         if (todayIndex !== -1 && scrollViewRef.current) {
             const scrollPosition = todayIndex * (width(14) + width(2)) - width(20);
             scrollViewRef.current.scrollTo({
                 x: Math.max(0, scrollPosition),
-                animated: true
+                animated: true,
             });
         }
     };
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            scrollToToday();
-        }, 100);
+        const timer = setTimeout(scrollToToday, 100);
         return () => clearTimeout(timer);
     }, [baseDate]);
 
     useEffect(() => {
-        console.log('🧠 Redux user:', user);
-    }, [user]);
-
-    useEffect(() => {
         const fetchReports = async () => {
             setLoading(true);
-            if (!user?.uid) {
-                console.log('❌ No UID found in Redux user.');
-                return;
-            }
-
-            console.log('✅ Fetching for UID:', user.uid);
-            console.log('📆 Selected date:', selectedDate);
-
-            const predictionsPath = collection(db, 'users', user.uid, 'predictions');
-            const predictionsWithImagePath = collection(db, 'users', user.uid, 'predictions_with_image');
-
+            setReports([]);
             try {
+                if (!user?.uid) {
+                    console.log('❌ No UID found in Redux user.');
+                    setLoading(false);
+                    return;
+                }
+
+                // Selected day's time window
+                const selected = parseISO(selectedDate);
+                const start = startOfDay(selected);
+                const end = endOfDay(selected);
+
+                const startTs = Timestamp.fromDate(start);
+                const endTs = Timestamp.fromDate(end);
+
+                // Build one query per collection, filtered by its own timestamp field
+                const predictionsCol = collection(db, 'users', user.uid, 'predictions');
+                const predictionsQ = query(
+                    predictionsCol,
+                    where('createdAt', '>=', startTs),
+                    where('createdAt', '<=', endTs)
+                );
+
+                const imgPredCol = collection(db, 'users', user.uid, 'predictions_with_image');
+                const imgPredQ = query(
+                    imgPredCol,
+                    where('timestamp', '>=', startTs),
+                    where('timestamp', '<=', endTs)
+                );
+
                 const [predictionsSnap, imagePredictionsSnap] = await Promise.all([
-                    getDocs(predictionsPath),
-                    getDocs(predictionsWithImagePath),
+                    getDocs(predictionsQ),
+                    getDocs(imgPredQ),
                 ]);
 
-                console.log('📦 Docs from predictions:', predictionsSnap.size);
-                console.log('📷 Docs from predictions_with_image:', imagePredictionsSnap.size);
+                const results = [];
 
-                const selected = parseISO(selectedDate);
-                const filtered = [];
-
-                const handleDoc = (doc, source = 'default') => {
+                predictionsSnap.forEach((doc) => {
                     const data = doc.data();
+                    const createdAt = data?.createdAt?.toDate?.();
+                    if (!createdAt) return;
 
-                    // Use `createdAt` for predictions and `timestamp` for predictions_with_image
-                    const rawTimestamp = data.createdAt || data.timestamp;
-                    const createdAt = rawTimestamp?.toDate?.();
+                    results.push({
+                        id: doc.id,
+                        source: 'predictions',
+                        label: data.category || data.predicted_class || 'Unknown',
+                        date: format(createdAt, 'yyyy-MM-dd'),
+                        createdAt,
+                        // spread the whole doc so Advice can show everything
+                        ...data,
+                    });
+                });
 
-                    console.log(`🔎 [${source}] Doc ID: ${doc.id}`);
-                    console.log('  🔹 createdAt:', createdAt);
+                imagePredictionsSnap.forEach((doc) => {
+                    const data = doc.data();
+                    const ts = data?.timestamp?.toDate?.();
+                    if (!ts) return;
 
-                    if (
-                        createdAt &&
-                        isWithinInterval(createdAt, {
-                            start: startOfDay(selected),
-                            end: endOfDay(selected),
-                        })
-                    ) {
-                        console.log('✅ MATCHED:', doc.id);
+                    results.push({
+                        id: doc.id,
+                        source: 'predictions_with_image',
+                        label: data.category || data.predicted_class || 'Unknown',
+                        date: format(ts, 'yyyy-MM-dd'),
+                        createdAt: ts,
+                        ...data,
+                    });
+                });
 
-                        filtered.push({
-                            id: doc.id,
-                            source,
-                            label: data.category || data.predicted_class || 'Unknown',
-                            date: format(createdAt, 'yyyy-MM-dd'),
-                            color: '#D1ECFF',
-                            iconColor: '#2196F3',
-                            ...data,
-                        });
-                    } else {
-                        console.log('❌ SKIPPED:', doc.id);
+                const normalize = (data, source) => {
+                    // Coffee type candidates your backend may use:
+                    const coffeeType =
+                        data.coffeeType ?? data.beanType ?? data.bean ?? data.variety ?? data.species ?? null;
+
+                    // Quality score candidates (normalize to 0..100)
+                    const rawScore = data.qualityScore ?? data.score ?? data.confidence ?? null;
+                    let qualityScore = null;
+                    if (rawScore != null) {
+                        const num = Number(rawScore);
+                        if (!Number.isNaN(num)) {
+                            qualityScore = num <= 1 ? +(num * 100).toFixed(1) : +num.toFixed(1);
+                        }
                     }
+
+                    // Quality mode: prefer explicit field from DB; else derive from score
+                    const explicitMode =
+                        data.qualityMode ?? data.quality_label ?? data.grade ?? null;
+
+                    const derivedMode =
+                        qualityScore == null
+                            ? null
+                            : qualityScore >= 80
+                                ? 'Green (Good)'
+                                : qualityScore >= 60
+                                    ? 'Yellow (Fair)'
+                                    : 'Red (Low)';
+
+                    const qualityMode = explicitMode ?? derivedMode ?? null;
+
+                    return {
+                        coffeeType,
+                        qualityMode,
+                        qualityScore,
+                    };
                 };
 
-                predictionsSnap.forEach(doc => handleDoc(doc, 'predictions'));
-                imagePredictionsSnap.forEach(doc => handleDoc(doc, 'predictions_with_image'));
+                // Optional: sort by time descending
+                results.sort((a, b) => (b.createdAt?.getTime?.() ?? 0) - (a.createdAt?.getTime?.() ?? 0));
 
-                console.log('✅ Final filtered reports:', filtered);
-                setReports(filtered);
+                setReports(results);
+            } catch (err) {
+                console.error('🔥 Firestore fetch error:', err);
+            } finally {
                 setLoading(false);
-            } catch (error) {
-                console.error('🔥 Firestore fetch error:', error);
             }
         };
+
         fetchReports();
     }, [selectedDate, user?.uid]);
 
@@ -142,13 +196,16 @@ const Report = () => {
                         setActiveTab('Last Month');
                     }}
                 >
-                    <Text style={[styles.tabText, activeTab === 'Last Month' && styles.tabActiveText]}>Last Month</Text>
+                    <Text style={[styles.tabText, activeTab === 'Last Month' && styles.tabActiveText]}>
+                        Last Month
+                    </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.tabButton, activeTab === 'Today' && styles.tabActive]}
                     onPress={() => {
-                        setBaseDate(new Date());
-                        setSelectedDate(format(new Date(), 'yyyy-MM-dd'));
+                        const now = new Date();
+                        setBaseDate(now);
+                        setSelectedDate(format(now, 'yyyy-MM-dd'));
                         setActiveTab('Today');
                     }}
                 >
@@ -162,7 +219,9 @@ const Report = () => {
                         setActiveTab('Next Month');
                     }}
                 >
-                    <Text style={[styles.tabText, activeTab === 'Next Month' && styles.tabActiveText]}>Next Month</Text>
+                    <Text style={[styles.tabText, activeTab === 'Next Month' && styles.tabActiveText]}>
+                        Next Month
+                    </Text>
                 </TouchableOpacity>
             </View>
 
@@ -183,13 +242,12 @@ const Report = () => {
                             key={i}
                             onPress={() => {
                                 const formatted = format(date, 'yyyy-MM-dd');
-                                console.log('Date pressed:', formatted);
                                 setSelectedDate(formatted);
                             }}
                             style={[
                                 styles.dateBox,
                                 isSelected && styles.selectedDate,
-                                isToday && styles.todayDate
+                                isToday && styles.todayDate,
                             ]}
                         >
                             <Text style={[styles.dateText, isToday && styles.todayText]}>
@@ -212,30 +270,40 @@ const Report = () => {
             ) : (
                 <FlatList
                     data={reports}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => `${item.source}:${item.id}`}
                     renderItem={({ item }) => (
-                        <View style={styles.reportItem}>
-                            <View style={[
-                                styles.iconBox,
-                                {
-                                    backgroundColor:
-                                        item.label?.toLowerCase() === 'disease'
-                                            ? '#F9AA9D'
-                                            : item.color || '#eee'
-                                }
-                            ]}>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('Advice', { report: item })}
+                            style={styles.reportItem}
+                        >
+                            <View
+                                style={[
+                                    styles.iconBox,
+                                    {
+                                        backgroundColor:
+                                            (item.label?.toLowerCase?.() === 'disease' && '#F9AA9D') ||
+                                            '#D1ECFF',
+                                    },
+                                ]}
+                            >
                                 <Image
-                                    source={require('../assets/beans_icon.png')}
+                                    source={require('../assets/beans.png')}
                                     style={styles.beanIcon}
+                                    resizeMode="contain"
                                 />
                             </View>
-                            <View>
-                                <Text style={styles.reportTitle}>
-                                    {item.label?.charAt(0).toUpperCase() + item.label?.slice(1)}
+                            <View style={{ flex: 1 }}>
+                                <Text numberOfLines={1} style={styles.reportTitle}>
+                                    {(item.label ?? 'Unknown')
+                                        .toString()
+                                        .replace(/^./, (c) => c.toUpperCase())}
                                 </Text>
-                                <Text style={styles.reportDate}>({item.date})</Text>
+                                <Text style={styles.reportDate}>
+                                    ({item.date}) • {item.source === 'predictions_with_image' ? 'With Image' : 'Text'}
+                                </Text>
                             </View>
-                        </View>
+                            <Text style={{ color: '#B35500', fontWeight: '600' }}>View</Text>
+                        </TouchableOpacity>
                     )}
                     contentContainerStyle={{ paddingBottom: 40 }}
                     ListEmptyComponent={
@@ -272,7 +340,7 @@ const styles = StyleSheet.create({
         paddingVertical: height(1),
         backgroundColor: '#fff',
         paddingHorizontal: width(1),
-        maxHeight: height(15)
+        maxHeight: height(15),
     },
     dateBox: {
         alignItems: 'center',
@@ -291,29 +359,11 @@ const styles = StyleSheet.create({
         shadowRadius: 3,
         elevation: 2,
     },
-    todayDate: {
-        backgroundColor: '#FFF3E9',
-    },
+    todayDate: { backgroundColor: '#FFF3E9' },
     dateText: { fontSize: 10, color: '#888' },
     dateNum: { fontSize: 16, fontWeight: 'bold', color: '#333' },
     dateTextSmall: { fontSize: 10, color: '#999' },
     todayText: { color: '#000' },
-    sortContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: width(4),
-        paddingVertical: height(1),
-        backgroundColor: '#ECECF1',
-        justifyContent: 'space-between',
-    },
-    sortLabel: { fontSize: 14, color: '#555' },
-    sortButton: {
-        backgroundColor: '#fff',
-        paddingHorizontal: width(4),
-        paddingVertical: height(0.6),
-        borderRadius: 10,
-    },
-    sortButtonText: { color: '#B35500', fontWeight: '600' },
     reportItem: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -322,7 +372,7 @@ const styles = StyleSheet.create({
         marginVertical: height(0.5),
         marginHorizontal: width(2),
         borderRadius: 10,
-        top: height(5)
+        top: height(1),
     },
     iconBox: {
         width: width(12),
@@ -332,31 +382,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         marginRight: width(4),
     },
-    dropdown: {
-        backgroundColor: '#fff',
-        marginHorizontal: width(4),
-        borderRadius: 8,
-        marginBottom: height(1),
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-    },
-    dropdownItem: {
-        paddingVertical: height(1),
-        paddingHorizontal: width(4),
-        borderBottomColor: '#eee',
-        borderBottomWidth: 1,
-    },
-    beanIcon: {
-        height: height(3.15),
-        width: width(6.6)
-    },
-    dropdownItemText: {
-        fontSize: 14,
-        color: '#B35500',
-    },
+    beanIcon: { height: height(3.15), width: width(6.6) },
     reportTitle: { fontSize: 16, fontWeight: '600', color: '#000' },
     reportDate: { fontSize: 14, color: '#555' },
 });
