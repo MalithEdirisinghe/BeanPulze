@@ -7,6 +7,7 @@ import {
     Image,
     ScrollView,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +17,7 @@ import { StatusBar } from 'expo-status-bar';
 import Header from '../components/Header';
 import { predictImage } from '../src/api/api';
 import Loader from '../components/Loader';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, getDoc } from 'firebase/firestore';
 import { db, auth } from '../src/firebaseConfig';
 
 const Capture = () => {
@@ -24,6 +25,7 @@ const Capture = () => {
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(false);
     const [aiResult, setAiResult] = useState(null);
+    const [saving, setSaving] = useState(false);
 
     const handlePickImage = async () => {
         const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
@@ -94,13 +96,16 @@ const Capture = () => {
     };
 
     const handleViewAdvice = async () => {
-        if (!aiResult || !auth.currentUser) return;
-
+        if (!aiResult || !auth.currentUser || saving) return;
         try {
-            const userId = auth.currentUser.uid;
+            setSaving(true);
 
-            await addDoc(collection(db, 'users', userId, 'predictions_with_image'), {
-                timestamp: Timestamp.now(),
+            const userId = auth.currentUser.uid;
+            const now = Timestamp.now();
+
+            // Save to Firestore
+            const docRef = await addDoc(collection(db, 'users', userId, 'predictions_with_image'), {
+                timestamp: now,
                 imageUri: image,
                 is_coffee_bean: aiResult.is_coffee_bean,
                 bean_type_confidence: aiResult.bean_type_confidence,
@@ -108,10 +113,24 @@ const Capture = () => {
                 predicted_class: aiResult.predicted_class,
             });
 
-            navigation.navigate('Advice');
+            // Build the payload Advice.js expects and pass it along
+            const reportPayload = {
+                id: docRef.id,
+                source: 'predictions_with_image',
+                timestamp: now,
+                imageUri: image,
+                is_coffee_bean: aiResult.is_coffee_bean,
+                bean_type_confidence: aiResult.bean_type_confidence,
+                is_coffee_bean_confidence: aiResult.is_coffee_bean_confidence,
+                predicted_class: aiResult.predicted_class,
+            };
+
+            navigation.navigate('Advice', { report: reportPayload });
         } catch (error) {
             Alert.alert('Error', 'Failed to save analysis. Please try again.');
             console.error('Firestore Save Error:', error);
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -159,7 +178,7 @@ const Capture = () => {
             {/* Summary Card */}
             {loading ? (
                 <View style={styles.loaderWrapper}>
-                    <Loader text="PROCESSING"/>
+                    <Loader text="PROCESSING" />
                 </View>
             ) : aiResult ? (
                 <View style={styles.summaryCard}>
@@ -170,8 +189,18 @@ const Capture = () => {
                     <Text style={styles.summaryText}>Prediction Confidence: {aiResult.is_coffee_bean_confidence}</Text>
                     <Text style={styles.summaryText}>Predicted Class: {aiResult.predicted_class}</Text>
 
-                    <TouchableOpacity style={styles.viewAdviceButton} onPress={handleViewAdvice}>
-                        <Text style={styles.buttonText}>Save & View Advice</Text>
+                    <TouchableOpacity
+                        style={[styles.viewAdviceButton, (saving || loading) && styles.disabledButton]}
+                        onPress={handleViewAdvice}
+                        disabled={saving || loading}
+                        accessibilityRole="button"
+                        accessibilityState={{ busy: saving }}
+                    >
+                        {saving ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                            <Text style={styles.buttonText}>Save & View Advice</Text>
+                        )}
                     </TouchableOpacity>
                 </View>
             ) : null}
